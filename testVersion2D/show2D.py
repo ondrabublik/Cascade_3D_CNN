@@ -117,14 +117,17 @@ def plotResult(path, gen, dataIn, dataOut, ind):
 
 
 if __name__ == "__main__":
-    dataDirs = ['../../data/training_data/test_2D']
-    path = Path('../../data/training_data/test_2D')
+    dataDirs = ['../../data/training_data/test_2D_v2']
+    path = Path('../../data/training_data/test_2D_v2')
     pathResults = path / Path('results')
     pathResults.mkdir(exist_ok=True)
 
+    from UNetDev2D_periodic import AddBC
+
     net = keras.models.load_model(path / Path("model.keras"), safe_mode=False, custom_objects={
-        'slice':slice,
-          'tf':tf})
+        'slice': slice,
+        'tf': tf,
+        'AddBC': AddBC})
 
     dataIn = np.load(os.path.join(path, "dataIn.npy"))
     dataOut = np.load(os.path.join(path, "dataOut.npy"))

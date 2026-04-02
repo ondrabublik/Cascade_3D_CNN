@@ -1,5 +1,8 @@
-import tensorflow as tf
 from pathlib import Path
+import tensorflow as tf
+print(tf.__version__)
+import tensorflowjs as tfjs
+
 
 # Cesty
 base_path = Path('../../data/training_data/test_2D')
@@ -9,12 +12,6 @@ tflite_model_path = base_path / 'model.tflite'
 # Načti Keras model
 model = tf.keras.models.load_model(keras_model_path)
 
-# Vytvoř TFLite converter z Keras modelu
-converter = tf.lite.TFLiteConverter.from_keras_model(model)
-tflite_model = converter.convert()
+# převod na TFJS formát
+tfjs.converters.save_keras_model(model, base_path / 'web_model')
 
-# Ulož TFLite model
-with open(tflite_model_path, 'wb') as f:
-    f.write(tflite_model)
-
-print(f"TFLite model uložen do: {tflite_model_path}")

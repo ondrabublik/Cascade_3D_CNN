@@ -39,8 +39,8 @@ if __name__ == "__main__":
     pathResults.mkdir(exist_ok=True)
 
     net = keras.models.load_model(path / Path("model.keras"), safe_mode=False, compile=False, custom_objects={
-        'slice':slice,
-          'tf':tf
+        'slice': slice,
+        'tf': tf
     })
 
     x = np.load(os.path.join(path, "x.npy"))
@@ -48,24 +48,21 @@ if __name__ == "__main__":
     z = np.load(os.path.join(path, "z.npy"))
     dataIn = np.load(os.path.join(path, "dataIn.npy"))
     dataIn = dataIn[0:1,:,:,:,:]
-    dataOut = np.load(os.path.join(path, "dataOut.npy"))
-    dataOut = dataOut[0:1, :, :, :, :]
 
     nSpec, nx, ny, nz, dimIn = np.shape(dataIn)
-    nSpec, nx, ny, nz, dimOut = np.shape(dataOut)
-    print(nSpec)
 
     scales = np.load(path / Path("scales.npy"), allow_pickle=True).item()
     in_min = scales["in_min"]
     in_max = scales["in_max"]
-    secondary_velocity = 10 # [m/s]
-    dataIn[0:1, :, :, :, 3] = (secondary_velocity - in_min[3]) / (in_max[3] - in_min[3])
 
-    gen = net.predict(dataIn)
-    dataIn = descaleIn(path, dataIn)
-    dataOut = descaleOut(path, dataOut)
+    secondary_velocity = [-5,0,5,10,15,20,25,30,35,40,45,50,55,60] # [m/s]
+    for v in secondary_velocity:
+        dataIn[:, :, :, :, 3] = (v - in_min[3]) / (in_max[3] - in_min[3])
 
-    gen = descaleOut(path, gen)
-    vtk_all(pathResults / Path('result_unseen.vtu'), dataIn[0,:,:,:,0], dataIn[0,:,:,:,1],dataIn[0,:,:,:,2],dataIn[0,:,:,:,3], x, y, z, gen[0,:,:,:,0], gen[0,:,:,:,1], gen[0,:,:,:,2], gen[0,:,:,:,3])
+        gen = net.predict(dataIn)
+        desDataIn = descaleIn(path, dataIn)
+
+        gen = descaleOut(path, gen)
+        vtk_all(pathResults / Path('result_unseen' + str(v) + '.vtu'), desDataIn[0,:,:,:,0], desDataIn[0,:,:,:,1], desDataIn[0,:,:,:,2], desDataIn[0,:,:,:,3], x, y, z, gen[0,:,:,:,0], gen[0,:,:,:,1], gen[0,:,:,:,2], gen[0,:,:,:,3])
 
 

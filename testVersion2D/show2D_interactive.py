@@ -24,7 +24,7 @@ def plotResult(axs, gen, dataIn, dataOut):
     p0 = dataOut[:, :, 2]
     uv0 = np.sqrt(u0 ** 2 + v0 ** 2)
 
-    velMin = np.amin([np.amin(uv), np.amin(uv0)])
+    velMin = 0; #np.amin([np.amin(uv), np.amin(uv0)])
     velMax = np.amax([np.amax(uv), np.amax(uv0)])
     pMin = np.amin([np.amin(p), np.amin(p0)])
     pMax = np.amax([np.amax(p), np.amax(p0)])
@@ -90,20 +90,27 @@ def plotResult(axs, gen, dataIn, dataOut):
 
 
 if __name__ == "__main__":
-    dataDirs = ['../../data/training_data/test_2D']
-    path = Path('../../data/training_data/test_2D')
+    dataDirs = ['../../data/training_data/test_2D_v2']
+    path = Path('../../data/training_data/test_2D_v2')
     pathResults = path / Path('results')
     pathResults.mkdir(exist_ok=True)
 
+    from UNetDev2D_periodic import AddBC
     net = keras.models.load_model(path / Path("model.keras"), safe_mode=False, custom_objects={
         'slice': slice,
-        'tf': tf})
+        'tf': tf,
+        'AddBC': AddBC})
 
     dataIn = np.load(os.path.join(path, "dataIn.npy"))
     dataOut = np.load(os.path.join(path, "dataOut.npy"))
     nSpec, nx, ny, dimIn = np.shape(dataIn)
 
-    i = 1
+    scales = np.load(os.path.join(path, "scales.npy"), allow_pickle=True).item()
+    out_min = scales["out_min"]
+    out_max = scales["out_max"]
+    dataOut = dataOut * (out_max - out_min) + out_min
+
+    i = 5
 
     # figure se 2 řádky a 3 sloupci
     fig, axs = plt.subplots(2, 3, figsize=(14, 10))
@@ -111,6 +118,7 @@ if __name__ == "__main__":
 
     # inicializace
     gen = net.predict(dataIn[i:i+1, :, :, :])
+    gen = gen * (out_max - out_min) + out_min
     plotResult(axs, gen[0, :, :, :], dataIn[i, :, :, :], dataOut[i, :, :, :])
 
     # posuvníky pod grafem
@@ -125,6 +133,8 @@ if __name__ == "__main__":
         dataIn[i:i+1, :, :, 3] = slider_re.val
         dataIn[i:i+1, :, :, 4] = slider_alfa.val
         gen = net.predict(dataIn[i:i+1, :, :, :])
+        gen = gen * (out_max - out_min) + out_min
+
         plotResult(axs, gen[0, :, :, :], dataIn[i, :, :, :], dataOut[i, :, :, :])
         fig.canvas.draw_idle()
 

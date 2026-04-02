@@ -65,4 +65,4 @@ def convert_mat_to_npy(path_to_mat):
     print(f"Rozměry: dataIn {dataIn_norm.shape}, dataOut {dataOut_norm.shape}")
 
 if __name__ == "__main__":
-    convert_mat_to_npy('../../data/training_data/test_2D/data.mat')
+    convert_mat_to_npy('../../data/training_data/test_2D_v2/data.mat')
