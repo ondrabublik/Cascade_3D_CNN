@@ -1,8 +1,10 @@
 import tensorflow as tf
 from keras.src.layers import Conv2D, MaxPooling2D, UpSampling2D, concatenate, Input
 from keras.src.models import Model
+from keras.src.saving import register_keras_serializable
 
 
+@register_keras_serializable()
 class AddBC(tf.keras.layers.Layer):
     """
     Vrstva, která přidá okrajové podmínky do 4D tenzoru [nSpec, nx, ny, dims].

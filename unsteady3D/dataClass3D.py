@@ -19,8 +19,8 @@ class Data:
 		self.nz = 48
 		self.parameters = {}
 		self.scales = {}
-		self.batchSize = 1
-		self.nBatches = 15
+		self.batchSize = 10
+		self.nBatches = 30
 		self.dimIn = 13
 		self.dimOut = 4
 
@@ -198,17 +198,16 @@ class Data:
 
 			for iS in range(self.batchSize):
 				iDir = random.randint(0, len(self.dataDirs) - 1)
-				selected_matIds = random.sample(range(nIter[iDir]-1), min(nSamplesPerDir, self.batchSize))
+				i = random.sample(range(nIter[iDir]-1), 1)[0]
 
-				for i in selected_matIds:
-					print("Creating sample " + str(i) + "/" + str(self.batchSize) + " from " + self.dataDirs[iDir]
-					+ " by processing iteration "
-					+ re.search(r'\d+', sorted_mat_files[iDir][i].name).group(0) + " and "
-					+ re.search(r'\d+', sorted_mat_files[iDir][i + 1].name).group(0))
+				print("Creating sample " + str(i) + "/" + str(self.batchSize) + " from " + self.dataDirs[iDir]
+				+ " by processing iteration "
+				+ re.search(r'\d+', sorted_mat_files[iDir][i].name).group(0) + " and "
+				+ re.search(r'\d+', sorted_mat_files[iDir][i + 1].name).group(0))
 
-					mat = scipy.io.loadmat(sorted_mat_files[iDir][i])['data']
-					nextmat = scipy.io.loadmat(sorted_mat_files[iDir][i + 1])['data']
-					self.setData(mat, nextmat, dataIn[iS], dataOut[iS], B)
+				mat = scipy.io.loadmat(sorted_mat_files[iDir][i])['data']
+				nextmat = scipy.io.loadmat(sorted_mat_files[iDir][i + 1])['data']
+				self.setData(mat, nextmat, dataIn[iS], dataOut[iS], B)
 
 			fileIn = self.dataPath / Path('dataIn_' + str(batch) + '.npy')
 			fileOut = self.dataPath / Path('dataOut_' + str(batch) + '.npy')

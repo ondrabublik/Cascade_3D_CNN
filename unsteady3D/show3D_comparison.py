@@ -8,6 +8,7 @@ from pathlib import Path
 import scipy
 from meshDeformation3D import meshDeformation3D as meshDeformation
 from toVtk import vtk
+from UNetDev3D_v2 import ReflectPadding3D
 
 
 def plotResult(path, gen, dataIn, dataOut, ind):
@@ -219,7 +220,7 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
 
 if __name__ == "__main__":
     dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10']
-    path = Path('../../data/net30_3D')
+    path = Path('../../data/net31_3D')
     pathResults = path / Path('results_NN_vs_CFD_in15_vent10')
     pathResults.mkdir(exist_ok=True)
 

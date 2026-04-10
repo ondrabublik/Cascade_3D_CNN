@@ -1,9 +1,7 @@
 import sys
-
-import keras
 import numpy as np
-from keras.src.optimizers import Adam
-
+import tensorflow.keras as keras
+from keras.optimizers import Adam
 from pathlib import Path
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -40,6 +38,7 @@ def plotErrs(path):
 
     fig, axs = plt.subplots(4, 2, figsize=(10, 13))
     fig.tight_layout(h_pad=5, w_pad=5, rect=(0.05, 0.01, 0.98, 0.98))
+    # plt.subplots_adjust(left=10, right=10, top=10, bottom=10)
 
     for i, ax in enumerate(axs.flat):
         if i < len(titles)-1:
@@ -80,7 +79,7 @@ class ErrsEqs(keras.callbacks.Callback):
         if epoch == 0:
             return
 
-        if epoch % 1000 == 0:
+        if epoch % 100 == 0:
             self.net.model.save((self.path / Path("model.keras")))
             # plotErrs(path=self.path)
             plotLoss(path=self.path, history=self.net.model.history)
@@ -106,13 +105,16 @@ def trainNet(unet, path, dataDirs=None, epochs=100, batch_size=64, learningRate=
              , actOut='sigmoid', frameWidth=2, nChannel=16, deep=5, growFactor=1, validationSplit=0.1, lossWeights=[]):
 
     # load train data
-    dataIn = np.load(os.path.join(path, "dataIn.npy"))
-    dataOut = np.load(os.path.join(path, "dataOut.npy"))
-    nSpec, nx, ny, dimIn = np.shape(dataIn)
-    nSpec, nx, ny, dimOut = np.shape(dataOut)
+    data = Data(dataDirs)
+    nx = data.nx
+    ny = data.ny
+    nz = data.nz
+    print(f"nx = {nx}, ny = {ny}, nz = {nz}")
+    dimIn = data.dimIn
+    dimOut = data.dimOut
 
     # build a core network model
-    net = unet(nx, ny, dimIn, dimOut, act=act, actOut=actOut, frame_width=frameWidth
+    net = unet(nx, ny, nz, dimIn, dimOut, act=act, actOut=actOut, scales=data.scales, frame_width=frameWidth
                , nChannel=nChannel, deep=deep, growFactor=growFactor)
 
     net.build()
@@ -126,26 +128,29 @@ def trainNet(unet, path, dataDirs=None, epochs=100, batch_size=64, learningRate=
                     'epochs': epochs, 'batch_size': batch_size, 'learningRate': learningRate,
                     'actOut': actOut, 'validationSplit': validationSplit,
                     'frameWidth': frameWidth, 'nChannel': nChannel, 'deep': deep,
-                    'nSamples': nSpec, 'weights': lossWeights}
+                    'nSamples': data.nBatches * data.batchSize, 'weights': lossWeights}
     file_path = path / Path('train_params.json')
     path.mkdir(parents=True, exist_ok=True)
     with file_path.open('w') as file:
         json.dump(input_params, fp=file, indent=4)
 
+    # Define data sequence
+    maxDataFiles = 3
+    train_data_sequence = DataSequence(data, maxDataFiles)
+
     # train model
-    history = net.model.fit(dataIn, dataOut, shuffle=True, epochs=epochs, verbose=1,
+    history = net.model.fit(train_data_sequence, shuffle=True, epochs=epochs, verbose=1,
                             callbacks=[ErrsEqs(net, path)])
 
     # save model
     net.model.save(path / Path("model.keras"))
-    net.model.save(path / Path("model.h5"))
 
     return history
 
 
 if __name__ == "__main__":
-    from UNetDev2D_periodic import UNetDev as Unet
-    # from UNetDev2D import UNetDev as Unet
+    from dataClass3D import Data
+    from UNetDev3D import UNetDev as Unet
 
     import os
 
@@ -167,11 +172,22 @@ if __name__ == "__main__":
     print("\nPyhon version: " + sys.version.split()[0])
     print("TensorFlow version: " + tf.__version__)
 
-    dataDirs = ['../../data/training_data/test_2D_v2']
-    path = Path('../../data/training_data/test_2D_v2')
+    # dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in5_vent10',
+    #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in5_vent15',
+    #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in5_vent20',
+    #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent10',
+    #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent15',
+    #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent20',
+    #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10',
+    #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent15',
+    #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20']
+    path = Path('../../data/net_3D_0_param')
+    dataDirs = [
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10"
+    ]
 
-    hist = trainNet(unet=Unet, dataDirs=dataDirs, epochs=30000, batch_size=200
-                    , frameWidth=2, nChannel=40, deep=5, growFactor=0, learningRate=1e-4
+    hist = trainNet(unet=Unet, dataDirs=dataDirs, epochs=20000, batch_size=5
+                    , frameWidth=2, nChannel=16, deep=5, growFactor=1, learningRate=1e-4
                     , path=path, validationSplit=0)
 
     plotLoss(history=hist, path=path)

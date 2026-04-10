@@ -71,6 +71,15 @@ class Data:
 		fileOut = self.dataPath / Path('dataOut_' + str(idx) + '.npy')
 		return np.load(fileOut)
 
+	def loadDataIn_multistep(self, idx):
+		fileIn = self.dataPath / Path('dataIn_multistep_' + str(idx) + '.npy')
+		print('Data loaded (multistep): ' + str(idx))
+		return np.load(fileIn)
+
+	def loadDataOut_multistep(self, idx):
+		fileOut = self.dataPath / Path('dataOut_multistep_' + str(idx) + '.npy')
+		return np.load(fileOut)
+
 	def setParameters(self):
 		self.parameters = {'Re': 5000, 'dt': 0.1}
 
@@ -153,8 +162,8 @@ class Data:
 		dataIn[0:nx, 0:ny, 0:nz, 6] = B
 		dataIn[0:nx, 0:ny, 0:nz, 7] = mat['D_inlet'][0][0]
 		dataIn[0:nx, 0:ny, 0:nz, 8] = mat['D'][0][0]
-		dataIn[0:nx, 0:ny, 0:nz, 9] = mat['parameters'][0][0][0][0] / 20
-		dataIn[0:nx, 0:ny, 0:nz, 10] = mat['parameters'][0][0][0][1] / 20
+		dataIn[0:nx, 0:ny, 0:nz, 9] = mat['parameters'][0][0][0][0] / 20.0
+		dataIn[0:nx, 0:ny, 0:nz, 10] = mat['parameters'][0][0][0][1] / 20.0
 		dataIn[0:nx, 0:ny, 0:nz, 11] = mat['U'][0][0] + u_noise
 		dataIn[0:nx, 0:ny, 0:nz, 12] = mat['V'][0][0] + v_noise
 		dataIn[0:nx, 0:ny, 0:nz, 13] = mat['W'][0][0] + w_noise
@@ -164,6 +173,44 @@ class Data:
 		dataOut[0:nx, 0:ny, 0:nz, 1] = nextMat['V'][0][0]
 		dataOut[0:nx, 0:ny, 0:nz, 2] = nextMat['W'][0][0]
 		dataOut[0:nx, 0:ny, 0:nz, 3] = nextMat['P'][0][0]
+
+	def setData_multistep(self, mats, dataIn, dataOut, B):
+		"""
+		dataIn shape:  [nSteps, nx, ny, nz, dimIn]
+		dataOut shape: [nSteps, nx, ny, nz, dimOut]
+		"""
+		nSteps, nx, ny, nz, _ = np.shape(dataIn)
+
+		for step in range(nSteps):
+			mat = mats[step]
+			nextMat = mats[step + 1]
+
+			noise_stddev = 0.05
+			u_noise = np.random.normal(loc=0, scale=noise_stddev, size=(nx, ny, nz))
+			v_noise = np.random.normal(loc=0, scale=noise_stddev, size=(nx, ny, nz))
+			w_noise = np.random.normal(loc=0, scale=noise_stddev, size=(nx, ny, nz))
+			p_noise = np.random.normal(loc=0, scale=noise_stddev, size=(nx, ny, nz))
+
+			dataIn[step, :, :, :, 0] = mat['X'][0][0]
+			dataIn[step, :, :, :, 1] = mat['Y'][0][0]
+			dataIn[step, :, :, :, 2] = mat['Z'][0][0]
+			dataIn[step, :, :, :, 3] = (nextMat['X'][0][0] - mat['X'][0][0]) / self.parameters['dt']
+			dataIn[step, :, :, :, 4] = (nextMat['Y'][0][0] - mat['Y'][0][0]) / self.parameters['dt']
+			dataIn[step, :, :, :, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
+			dataIn[step, :, :, :, 6] = B
+			dataIn[step, :, :, :, 7] = mat['D_inlet'][0][0]
+			dataIn[step, :, :, :, 8] = mat['D'][0][0]
+			dataIn[step, :, :, :, 9] = mat['parameters'][0][0][0][0] / 20.0
+			dataIn[step, :, :, :, 10] = mat['parameters'][0][0][0][1] / 20.0
+			dataIn[step, :, :, :, 11] = mat['U'][0][0] + u_noise
+			dataIn[step, :, :, :, 12] = mat['V'][0][0] + v_noise
+			dataIn[step, :, :, :, 13] = mat['W'][0][0] + w_noise
+			dataIn[step, :, :, :, 14] = mat['P'][0][0] + p_noise
+
+			dataOut[step, :, :, :, 0] = nextMat['U'][0][0]
+			dataOut[step, :, :, :, 1] = nextMat['V'][0][0]
+			dataOut[step, :, :, :, 2] = nextMat['W'][0][0]
+			dataOut[step, :, :, :, 3] = nextMat['P'][0][0]
 
 	def prepare_training_data(self):
 		"""
@@ -214,5 +261,59 @@ class Data:
 
 			fileIn = self.dataPath / Path('dataIn_' + str(batch) + '.npy')
 			fileOut = self.dataPath / Path('dataOut_' + str(batch) + '.npy')
+			np.save(fileIn, dataIn)
+			np.save(fileOut, dataOut)
+
+	def prepare_training_data_multistep(self, nSteps=5):
+		"""
+			Ulozi sekvence s osou step na zacatku:
+			dataIn:  [batch, step, nx, ny, nz, dimIn]
+			dataOut: [batch, step, nx, ny, nz, dimOut]
+		"""
+		self.setScales()
+		with open(self.fileScales, "w") as file:
+			json.dump(self.scales, file)
+
+		nSamplesPerDir = 100
+
+		sorted_mat_files = []
+		nIter = []
+		nIterTot = 0
+		for dir in self.dataDirs:
+			mat_files = [f for f in Path(dir).iterdir()]
+			sorted_mat_files.append(sorted(mat_files, key=lambda filename: int(re.search(r'\d+', filename.name).group())))
+			nIter.append(len(sorted_mat_files[-1]))
+			nIterTot += nIter[-1]
+
+		mat0 = scipy.io.loadmat(sorted_mat_files[0][0])['data']
+		self.nx, self.ny, self.nz = np.shape(mat0['X'][0][0])
+
+		self.nSamplesTot = min(nIterTot, nSamplesPerDir * len(self.dataDirs))
+		md = meshDeformation3D(self.parentDir / Path('mesh.mat'))
+		B = md.computeB()
+
+		for batch in range(self.nBatches):
+			print('batch (multistep): ' + str(batch) + ' / ' + str(self.nBatches))
+			dataIn = np.zeros((self.batchSize, nSteps, self.nx, self.ny, self.nz, self.dimIn), dtype=np.float32)
+			dataOut = np.zeros((self.batchSize, nSteps, self.nx, self.ny, self.nz, self.dimOut), dtype=np.float32)
+
+			for iS in range(self.batchSize):
+				iDir = random.randint(0, len(self.dataDirs) - 1)
+				maxStart = max(1, nIter[iDir] - nSteps)
+				startCandidates = range(maxStart)
+				selectedStartIds = random.sample(startCandidates, min(len(startCandidates), 1))
+
+				for i in selectedStartIds:
+					print("Creating multistep sample from " + self.dataDirs[iDir]
+					+ " start iteration "
+					+ re.search(r'\d+', sorted_mat_files[iDir][i].name).group(0))
+
+					mats = []
+					for j in range(nSteps + 1):
+						mats.append(scipy.io.loadmat(sorted_mat_files[iDir][i + j])['data'])
+					self.setData_multistep(mats, dataIn[iS], dataOut[iS], B)
+
+			fileIn = self.dataPath / Path('dataIn_multistep_' + str(batch) + '.npy')
+			fileOut = self.dataPath / Path('dataOut_multistep_' + str(batch) + '.npy')
 			np.save(fileIn, dataIn)
 			np.save(fileOut, dataOut)

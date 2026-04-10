@@ -81,8 +81,7 @@ class UNetDev:
         # encoder
         for i in range(1, self.deep):
             layer_bc = AddBC(self.frame_width)(layer)
-            conv[i - 1] = Conv3D(nChannels[i], kernel_size=frame,
-                                 activation=self.act, padding='valid')(layer_bc)
+            conv[i - 1] = Conv3D(nChannels[i], kernel_size=frame, activation=self.act, padding='valid')(layer_bc)
             layer = MaxPooling3D(pool_size=poolFrame)(conv[i - 1])
 
         # bottleneck
@@ -99,7 +98,6 @@ class UNetDev:
 
         # output
         layer_bc = AddBC(self.frame_width)(layer)
-        output = Conv3D(self.dimOut, kernel_size=frame,
-                        activation=self.actOut, padding='valid')(layer_bc)
+        output = Conv3D(self.dimOut, kernel_size=frame, activation=self.actOut, padding='valid')(layer_bc)
 
         self.model = Model(inputs=inputs, outputs=output)

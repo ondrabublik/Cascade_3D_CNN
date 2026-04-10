@@ -110,7 +110,7 @@ def getPossitions(t, nBody):
 
 if __name__ == "__main__":
     dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10']
-    path = Path('../../data/net30_3D')
+    path = Path('../../data/net30_3D_multistep')
     pathResults = path / Path('results_CNN_multi')
     pathResults.mkdir(exist_ok=True)
 
@@ -140,8 +140,8 @@ if __name__ == "__main__":
     dataIn[0:1, :, :, :, 6] = md.computeB()
     dataIn[0:1, :, :, :, 7] = dataCFDIn[0:1, :, :, :, 7]
     dataIn[0:1, :, :, :, 8] = dataCFDIn[0:1, :, :, :, 8]
-    dataIn[0:1, :, :, :, 9] = 10.0 / 20.0
-    dataIn[0:1, :, :, :, 10] = 15.0 / 20.0
+    dataIn[0:1, :, :, :, 9] = 15.0 / 20.0
+    dataIn[0:1, :, :, :, 10] = 10.0 / 20.0
     dataIn[0:1, :, :, :, 11:15] = dataCFDIn[0:1, :, :, :, 11:15]
 
     for iter, t in enumerate(np.arange(dt, T, dt)):
@@ -160,6 +160,9 @@ if __name__ == "__main__":
         dataIn[0, :, :, :, 4] = vMesh
         dataIn[0, :, :, :, 5] = wMesh
 
+        # boundary condition
+        #dataIn[0, 0, :, :, 11] = 15
+
         gen = net.predict(dataIn)
 
         dataIn[0, :, :, :, 0] = Xn1
@@ -167,7 +170,7 @@ if __name__ == "__main__":
         dataIn[0, :, :, :, 2] = Zn1
         dataIn[:, :, :, :, 11:15] = gen[:, :, :, :]
 
-        plotResult(pathResults, gen[:, :, :, 0, :], dataIn[:, :, :, 0, :], iter)
+        plotResult(pathResults, gen[:, :, :, -5, :], dataIn[:, :, :, -5, :], iter)
 
         vtkBoundary(pathResults / Path('boundary_' + str(iter) + '.vtu'), B, dataIn[0, :, :, :, 0], dataIn[0, :, :, :, 1],
             dataIn[0, :, :, :, 2], gen[0, :, :, :, 3])
