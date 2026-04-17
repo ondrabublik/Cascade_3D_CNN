@@ -20,8 +20,8 @@ class Data:
 		self.parameters = {}
 		self.scales = {}
 		self.batchSize = 10
-		self.nBatches = 100
-		self.dimIn = 15
+		self.nBatches = 10
+		self.dimIn = 13
 		self.dimOut = 4
 
 		self.fileParameters = self.dataPath / Path('parameters.json')
@@ -160,14 +160,12 @@ class Data:
 		dataIn[0:nx, 0:ny, 0:nz, 4] = (nextMat['Y'][0][0] - mat['Y'][0][0]) / self.parameters['dt']
 		dataIn[0:nx, 0:ny, 0:nz, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
 		dataIn[0:nx, 0:ny, 0:nz, 6] = B
-		dataIn[0:nx, 0:ny, 0:nz, 7] = mat['D_inlet'][0][0]
-		dataIn[0:nx, 0:ny, 0:nz, 8] = mat['D'][0][0]
-		dataIn[0:nx, 0:ny, 0:nz, 9] = mat['parameters'][0][0][0][0] / 20.0
-		dataIn[0:nx, 0:ny, 0:nz, 10] = mat['parameters'][0][0][0][1] / 20.0
-		dataIn[0:nx, 0:ny, 0:nz, 11] = mat['U'][0][0] + u_noise
-		dataIn[0:nx, 0:ny, 0:nz, 12] = mat['V'][0][0] + v_noise
-		dataIn[0:nx, 0:ny, 0:nz, 13] = mat['W'][0][0] + w_noise
-		dataIn[0:nx, 0:ny, 0:nz, 14] = mat['P'][0][0] + p_noise
+		dataIn[0:nx, 0:ny, 0:nz, 7] = mat['D_inlet'][0][0] * mat['parameters'][0][0][0][0] / 20.0
+		dataIn[0:nx, 0:ny, 0:nz, 8] = mat['D'][0][0] * mat['parameters'][0][0][0][1] / 20.0
+		dataIn[0:nx, 0:ny, 0:nz, 9] = mat['U'][0][0] + u_noise
+		dataIn[0:nx, 0:ny, 0:nz, 10] = mat['V'][0][0] + v_noise
+		dataIn[0:nx, 0:ny, 0:nz, 11] = mat['W'][0][0] + w_noise
+		dataIn[0:nx, 0:ny, 0:nz, 12] = mat['P'][0][0] + p_noise
 
 		dataOut[0:nx, 0:ny, 0:nz, 0] = nextMat['U'][0][0]
 		dataOut[0:nx, 0:ny, 0:nz, 1] = nextMat['V'][0][0]
@@ -198,14 +196,12 @@ class Data:
 			dataIn[step, :, :, :, 4] = (nextMat['Y'][0][0] - mat['Y'][0][0]) / self.parameters['dt']
 			dataIn[step, :, :, :, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
 			dataIn[step, :, :, :, 6] = B
-			dataIn[step, :, :, :, 7] = mat['D_inlet'][0][0]
-			dataIn[step, :, :, :, 8] = mat['D'][0][0]
-			dataIn[step, :, :, :, 9] = mat['parameters'][0][0][0][0] / 20.0
-			dataIn[step, :, :, :, 10] = mat['parameters'][0][0][0][1] / 20.0
-			dataIn[step, :, :, :, 11] = mat['U'][0][0] + u_noise
-			dataIn[step, :, :, :, 12] = mat['V'][0][0] + v_noise
-			dataIn[step, :, :, :, 13] = mat['W'][0][0] + w_noise
-			dataIn[step, :, :, :, 14] = mat['P'][0][0] + p_noise
+			dataIn[step, :, :, :, 7] = mat['D_inlet'][0][0] * mat['parameters'][0][0][0][0] / 20.0
+			dataIn[step, :, :, :, 8] = mat['D'][0][0] * mat['parameters'][0][0][0][1] / 20.0
+			dataIn[step, :, :, :, 9] = mat['U'][0][0] + u_noise
+			dataIn[step, :, :, :, 10] = mat['V'][0][0] + v_noise
+			dataIn[step, :, :, :, 11] = mat['W'][0][0] + w_noise
+			dataIn[step, :, :, :, 12] = mat['P'][0][0] + p_noise
 
 			dataOut[step, :, :, :, 0] = nextMat['U'][0][0]
 			dataOut[step, :, :, :, 1] = nextMat['V'][0][0]
@@ -247,17 +243,16 @@ class Data:
 
 			for iS in range(self.batchSize):
 				iDir = random.randint(0, len(self.dataDirs) - 1)
-				selected_matIds = random.sample(range(nIter[iDir]-1), min(nSamplesPerDir, self.batchSize))
+				i = random.sample(range(nIter[iDir]-1), 1)[0]
 
-				for i in selected_matIds:
-					print("Creating sample " + str(i) + "/" + str(self.batchSize) + " from " + self.dataDirs[iDir]
-					+ " by processing iteration "
-					+ re.search(r'\d+', sorted_mat_files[iDir][i].name).group(0) + " and "
-					+ re.search(r'\d+', sorted_mat_files[iDir][i + 1].name).group(0))
+				print("Creating sample " + str(i) + "/" + str(self.batchSize) + " from " + self.dataDirs[iDir]
+				+ " by processing iteration "
+				+ re.search(r'\d+', sorted_mat_files[iDir][i].name).group(0) + " and "
+				+ re.search(r'\d+', sorted_mat_files[iDir][i + 1].name).group(0))
 
-					mat = scipy.io.loadmat(sorted_mat_files[iDir][i])['data']
-					nextmat = scipy.io.loadmat(sorted_mat_files[iDir][i + 1])['data']
-					self.setData(mat, nextmat, dataIn[iS], dataOut[iS], B)
+				mat = scipy.io.loadmat(sorted_mat_files[iDir][i])['data']
+				nextmat = scipy.io.loadmat(sorted_mat_files[iDir][i + 1])['data']
+				self.setData(mat, nextmat, dataIn[iS], dataOut[iS], B)
 
 			fileIn = self.dataPath / Path('dataIn_' + str(batch) + '.npy')
 			fileOut = self.dataPath / Path('dataOut_' + str(batch) + '.npy')

@@ -110,7 +110,7 @@ def getPossitions(t, nBody):
 
 if __name__ == "__main__":
     dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10']
-    path = Path('../../data/net30_3D_multistep')
+    path = Path('../../data/net32_3D_multistep')
     pathResults = path / Path('results_CNN_multi')
     pathResults.mkdir(exist_ok=True)
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
     dataCFDIn, dataCFDOut = prepareDataInFromCFD(3, matFiles=matFiles, B=B, dt=data.parameters['dt'])
 
-    dataIn = np.zeros([1, data.nx, data.ny, data.nz, 15])
+    dataIn = np.zeros([1, data.nx, data.ny, data.nz, 13])
 
     xt, yt, zt = getPossitions(0, md.nBody)
     Xn, Yn, Zn = md.computeTiltMesh(xt, yt, zt)
@@ -138,11 +138,9 @@ if __name__ == "__main__":
     dataIn[0:1, :, :, :, 1] = Yn
     dataIn[0:1, :, :, :, 2] = Zn
     dataIn[0:1, :, :, :, 6] = md.computeB()
-    dataIn[0:1, :, :, :, 7] = dataCFDIn[0:1, :, :, :, 7]
-    dataIn[0:1, :, :, :, 8] = dataCFDIn[0:1, :, :, :, 8]
-    dataIn[0:1, :, :, :, 9] = 15.0 / 20.0
-    dataIn[0:1, :, :, :, 10] = 10.0 / 20.0
-    dataIn[0:1, :, :, :, 11:15] = dataCFDIn[0:1, :, :, :, 11:15]
+    dataIn[0:1, :, :, :, 7] = dataCFDIn[0:1, :, :, :, 7] * 15.0 / 20.0
+    dataIn[0:1, :, :, :, 8] = dataCFDIn[0:1, :, :, :, 8] * 10.0 / 20.0
+    dataIn[0:1, :, :, :, 9:13] = dataCFDIn[0:1, :, :, :, 9:13]
 
     for iter, t in enumerate(np.arange(dt, T, dt)):
         print("Time: " + str(round(t, 3)) + ", Iter: " + str(iter))
@@ -168,7 +166,7 @@ if __name__ == "__main__":
         dataIn[0, :, :, :, 0] = Xn1
         dataIn[0, :, :, :, 1] = Yn1
         dataIn[0, :, :, :, 2] = Zn1
-        dataIn[:, :, :, :, 11:15] = gen[:, :, :, :]
+        dataIn[:, :, :, :, 9:13] = gen[:, :, :, :]
 
         plotResult(pathResults, gen[:, :, :, -5, :], dataIn[:, :, :, -5, :], iter)
 

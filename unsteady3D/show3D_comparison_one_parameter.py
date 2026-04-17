@@ -194,35 +194,19 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
     dataIn = np.zeros((1,nx,ny,nz,13))
     dataOut = np.zeros((1,nx,ny,nz,4))
 
-    # dataIn[0:1,0:nx, 0:ny, 0:nz, 0] = mat['X'][0][0]
-    # dataIn[0:1,0:nx, 0:ny, 0:nz, 1] = mat['Y'][0][0]
-    # dataIn[0:1,0:nx, 0:ny, 0:nz, 2] = mat['Z'][0][0]
-    # dataIn[0:1,0:nx, 0:ny, 0:nz, 3] = (nextMat['X'][0][0] - mat['X'][0][0]) / dt
-    # dataIn[0:1,0:nx, 0:ny, 0:nz, 4] = (nextMat['Y'][0][0] - mat['Y'][0][0]) / dt
-    # dataIn[0:1,0:nx, 0:ny, 0:nz, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / dt
-    # dataIn[0:1, 0:nx, 0:ny, 0:nz, 6] = B
-    # dataIn[0:1, 0:nx, 0:ny, 0:nz, 7] = mat['D_inlet'][0][0]
-    # dataIn[0:1, 0:nx, 0:ny, 0:nz, 8] = mat['D'][0][0]
-    # dataIn[0:1, 0:nx, 0:ny, 0:nz, 9] = mat['parameters'][0][0][0][0] / 20
-    # dataIn[0:1, 0:nx, 0:ny, 0:nz, 10] = mat['parameters'][0][0][0][1] / 20
-    # dataIn[0:1,0:nx, 0:ny, 0:nz, 11] = mat['U'][0][0]
-    # dataIn[0:1,0:nx, 0:ny, 0:nz, 12] = mat['V'][0][0]
-    # dataIn[0:1,0:nx, 0:ny, 0:nz, 13] = mat['W'][0][0]
-    # dataIn[0:1,0:nx, 0:ny, 0:nz, 14] = mat['P'][0][0]
-
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 0] = mat['X'][0][0]
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 1] = mat['Y'][0][0]
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 2] = mat['Z'][0][0]
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 3] = (nextMat['X'][0][0] - mat['X'][0][0]) / dt
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 4] = (nextMat['Y'][0][0] - mat['Y'][0][0]) / dt
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / dt
+    dataIn[0:1,0:nx, 0:ny, 0:nz, 0] = mat['X'][0][0]
+    dataIn[0:1,0:nx, 0:ny, 0:nz, 1] = mat['Y'][0][0]
+    dataIn[0:1,0:nx, 0:ny, 0:nz, 2] = mat['Z'][0][0]
+    dataIn[0:1,0:nx, 0:ny, 0:nz, 3] = (nextMat['X'][0][0] - mat['X'][0][0]) / dt
+    dataIn[0:1,0:nx, 0:ny, 0:nz, 4] = (nextMat['Y'][0][0] - mat['Y'][0][0]) / dt
+    dataIn[0:1,0:nx, 0:ny, 0:nz, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / dt
     dataIn[0:1, 0:nx, 0:ny, 0:nz, 6] = B
     dataIn[0:1, 0:nx, 0:ny, 0:nz, 7] = mat['D_inlet'][0][0] * mat['parameters'][0][0][0][0] / 20
     dataIn[0:1, 0:nx, 0:ny, 0:nz, 8] = mat['D'][0][0] * mat['parameters'][0][0][0][1] / 20
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 9] = mat['U'][0][0]
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 10] = mat['V'][0][0]
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 11] = mat['W'][0][0]
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 12] = mat['P'][0][0]
+    dataIn[0:1,0:nx, 0:ny, 0:nz, 9] = mat['U'][0][0]
+    dataIn[0:1,0:nx, 0:ny, 0:nz, 10] = mat['V'][0][0]
+    dataIn[0:1,0:nx, 0:ny, 0:nz, 11] = mat['W'][0][0]
+    dataIn[0:1,0:nx, 0:ny, 0:nz, 12] = mat['P'][0][0]
 
     dataOut[0:1,0:nx, 0:ny, 0:nz, 0] = nextMat['U'][0][0]
     dataOut[0:1,0:nx, 0:ny, 0:nz, 1] = nextMat['V'][0][0]
@@ -233,9 +217,9 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
 
 
 if __name__ == "__main__":
-    dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent15']
+    dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10']
     path = Path('../../data/net32_3D_multistep')
-    pathResults = path / Path('results_NN_vs_CFD_in15_vent15')
+    pathResults = path / Path('results_NN_vs_CFD_in15_vent10')
     pathResults.mkdir(exist_ok=True)
 
     net = keras.models.load_model(path / Path("model.keras"), safe_mode=False, custom_objects={
