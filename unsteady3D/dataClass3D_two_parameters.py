@@ -14,9 +14,9 @@ class Data:
 		self.parentDir = Path(self.dataDirs[0]).parents[0]
 		self.dataPath = self.parentDir / Path('data_3D')
 		self.nSamplesTot = 0
-		self.nx = 96 # TODO make programmatically
-		self.ny = 48
-		self.nz = 48
+		self.nx = 48 #96 # TODO make programmatically
+		self.ny = 24 #48
+		self.nz = 24 #48
 		self.parameters = {}
 		self.scales = {}
 		self.batchSize = 10

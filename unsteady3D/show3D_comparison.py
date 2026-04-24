@@ -233,9 +233,9 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
 
 
 if __name__ == "__main__":
-    dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent15']
+    dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20']
     path = Path('../../data/net32_3D_multistep')
-    pathResults = path / Path('results_NN_vs_CFD_in15_vent15')
+    pathResults = path / Path('results_NN_vs_CFD_in15_vent20')
     pathResults.mkdir(exist_ok=True)
 
     net = keras.models.load_model(path / Path("model.keras"), safe_mode=False, custom_objects={

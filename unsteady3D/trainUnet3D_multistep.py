@@ -278,11 +278,11 @@ if __name__ == "__main__":
     # ]
 
     dataDirs = [
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10",
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent15",
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent10",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent15",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent20",
     ]
-    path = Path("../../data/net32_3D_multistep")
+    path = Path("../../data/net32_3D_multistep_coarse")
 
     hist = trainNetMultistep(
         unet=Unet,
@@ -291,7 +291,7 @@ if __name__ == "__main__":
         batch_size=2,
         frameWidth=2,
         nChannel=12,
-        deep=5,
+        deep=4,
         growFactor=1,
         learningRate=1e-4,
         path=path,

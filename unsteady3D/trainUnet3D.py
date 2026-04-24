@@ -183,10 +183,12 @@ if __name__ == "__main__":
     #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20']
     path = Path('../../data/net_3D_0_param')
     dataDirs = [
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10"
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10",
+        '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent15',
+        '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20'
     ]
 
-    hist = trainNet(unet=Unet, dataDirs=dataDirs, epochs=20000, batch_size=5
+    hist = trainNet(unet=Unet, dataDirs=dataDirs, epochs=30000, batch_size=5
                     , frameWidth=2, nChannel=16, deep=5, growFactor=1, learningRate=1e-4
                     , path=path, validationSplit=0)
 
