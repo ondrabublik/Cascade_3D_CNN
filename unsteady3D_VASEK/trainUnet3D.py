@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import json
 from matplotlib.ticker import FormatStrFormatter
+import math
 
 
 def plotLoss(path, history=None):
@@ -56,6 +57,96 @@ def plotErrs(path):
     plt.close()
 
 
+def smoothExponential(values, alpha=0.9):
+    """Exponential moving average smoothing."""
+    smoothed = []
+    s = values[0]
+    for v in values:
+        s = alpha * s + (1 - alpha) * v
+        smoothed.append(s)
+    return smoothed
+
+
+class LivePlotCallback(keras.callbacks.Callback):
+    """Plots training metrics every `plot_every` epochs and saves to disk."""
+
+    def __init__(self, path, plot_every=50):
+        super().__init__()
+        self.path = path
+        self.plot_every = plot_every
+        self.epochs_log = []
+        self.metrics_log = {}   # key -> list of values
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        self.epochs_log.append(epoch + 1)
+        for key, val in logs.items():
+            self.metrics_log.setdefault(key, []).append(val)
+
+        if (epoch + 1) % self.plot_every == 0:
+            self._save_plot()
+
+    def _save_plot(self):
+        epochs = self.epochs_log
+
+        # Separate train vs. val keys
+        train_keys = [k for k in self.metrics_log if not k.startswith('val_') and k != 'lr']
+        val_keys   = [k for k in self.metrics_log if k.startswith('val_')]
+        has_lr     = 'lr' in self.metrics_log
+
+        # Build subplot grid
+        n_metric_plots = len(train_keys)   # one panel per metric (train+val overlaid)
+        n_extra = 1 if has_lr else 0       # learning-rate panel
+        n_panels = n_metric_plots + n_extra
+
+        ncols = 2
+        nrows = math.ceil(n_panels / ncols)
+        fig, axs = plt.subplots(nrows, ncols, figsize=(12, 4 * nrows))
+        fig.suptitle(f'Training progress  (epoch {self.epochs_log[-1]})', fontsize=13)
+        fig.tight_layout(rect=(0, 0, 1, 0.96), h_pad=4, w_pad=4)
+        axs_flat = list(axs.flat) if hasattr(axs, 'flat') else [axs]
+
+        panel = 0
+        for key in train_keys:
+            ax = axs_flat[panel]
+            y_train = self.metrics_log[key]
+            ax.semilogy(epochs, y_train, color='steelblue', alpha=0.35,
+                        linestyle='none', marker='o', markersize=3, label=f'train {key}')
+            ax.semilogy(epochs, smoothExponential(y_train), color='steelblue',
+                        linewidth=1.5, label=f'train {key} (smooth)')
+
+            val_key = 'val_' + key
+            if val_key in self.metrics_log:
+                y_val = self.metrics_log[val_key]
+                ax.semilogy(epochs, y_val, color='tomato', alpha=0.35,
+                            linestyle='none', marker='o', markersize=3, label=f'val {key}')
+                ax.semilogy(epochs, smoothExponential(y_val), color='tomato',
+                            linewidth=1.5, label=f'val {key} (smooth)')
+
+            ax.set_title(key)
+            ax.set_xlabel('epoch')
+            ax.grid(True, which='both', linestyle='--', alpha=0.4)
+            ax.legend(fontsize=7)
+            panel += 1
+
+        if has_lr:
+            ax = axs_flat[panel]
+            ax.semilogy(epochs, self.metrics_log['lr'], color='darkorange',
+                        linewidth=1.5, label='learning rate')
+            ax.set_title('Learning rate')
+            ax.set_xlabel('epoch')
+            ax.grid(True, which='both', linestyle='--', alpha=0.4)
+            ax.legend(fontsize=7)
+            panel += 1
+
+        # Hide any unused panels
+        for i in range(panel, nrows * ncols):
+            axs_flat[i].set_axis_off()
+
+        fig.savefig(self.path / Path('training_progress.png'), dpi=150)
+        plt.close(fig)
+
+
 def dataNormalization(data, minvalue, maxvalue):
     return (data - minvalue) / (maxvalue - minvalue)
 
@@ -86,19 +177,25 @@ class ErrsEqs(keras.callbacks.Callback):
 
 
 class DataSequence(tf.keras.utils.Sequence):
-    def __init__(self, data, maxDataFiles):
+    def __init__(self, data, maxDataFiles, startBatch=0, nBatches=None):
         self.data = data
         self.maxDataFiles = maxDataFiles
-        self.nGroups = (int) (data.nBatches / maxDataFiles)
+        self.startBatch = startBatch
+        total = nBatches if nBatches is not None else data.nBatches - startBatch
+        self.nBatches = (total // maxDataFiles) * maxDataFiles  # round down to full groups
+        self.nGroups = self.nBatches // maxDataFiles
         self.groupIndex = 0
 
     def __len__(self):
-        return self.maxDataFiles
+        return self.maxDataFiles   # same as original: a few steps per epoch
 
     def __getitem__(self, idx):
-        self.groupIndex += 1
-        self.groupIndex = self.groupIndex % self.nGroups
-        return self.data.loadDataIn(self.groupIndex * self.maxDataFiles + idx), self.data.loadDataOut(self.groupIndex * self.maxDataFiles + idx)
+        # cycle through groups across epochs
+        batch_idx = self.startBatch + self.groupIndex * self.maxDataFiles + idx
+        return self.data.loadDataIn(batch_idx), self.data.loadDataOut(batch_idx)
+
+    def on_epoch_end(self):
+        self.groupIndex = (self.groupIndex + 1) % max(1, self.nGroups)
 
 
 def trainNet(unet, path, dataDirs=None, epochs=100, batch_size=64, learningRate=1e-4, act='relu'
@@ -119,7 +216,8 @@ def trainNet(unet, path, dataDirs=None, epochs=100, batch_size=64, learningRate=
 
     net.build()
     optimizer = Adam(learning_rate=learningRate)  # Default is 1e-3
-    net.model.compile(loss='mean_squared_error', optimizer=optimizer)
+    net.model.compile(loss='mean_squared_error', optimizer=optimizer,
+                      metrics=['mae'])  # MAE logged alongside MSE loss
     net.info()
 
     # save parameters
@@ -134,13 +232,25 @@ def trainNet(unet, path, dataDirs=None, epochs=100, batch_size=64, learningRate=
     with file_path.open('w') as file:
         json.dump(input_params, fp=file, indent=4)
 
-    # Define data sequence
+    # Define data sequence — split into train / val
     maxDataFiles = 3
-    train_data_sequence = DataSequence(data, maxDataFiles)
+    total_batches = data.nBatches
+    n_val_batches  = max(maxDataFiles, int(total_batches * validationSplit // maxDataFiles) * maxDataFiles)
+    n_train_batches = total_batches - n_val_batches
+
+    train_data_sequence = DataSequence(data, maxDataFiles, startBatch=0,           nBatches=n_train_batches)
+    val_data_sequence   = DataSequence(data, maxDataFiles, startBatch=n_train_batches, nBatches=n_val_batches) \
+                          if validationSplit > 0 and n_val_batches > 0 else None
+
+    print(f"Train batches: {n_train_batches}  |  Val batches: {n_val_batches}  |  Total: {total_batches}")
 
     # train model
+    live_plot  = LivePlotCallback(path=path, plot_every=50)
+    lr_logger  = keras.callbacks.LearningRateScheduler(lambda epoch, lr: lr, verbose=0)
+
     history = net.model.fit(train_data_sequence, shuffle=True, epochs=epochs, verbose=1,
-                            callbacks=[ErrsEqs(net, path)])
+                            validation_data=val_data_sequence,
+                            callbacks=[ErrsEqs(net, path), live_plot, lr_logger])
 
     # save model
     net.model.save(path / Path("model.keras"))
@@ -181,14 +291,16 @@ if __name__ == "__main__":
     #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10',
     #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent15',
     #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20']
-    path = Path('../../data/net_3D_0_vasek')
+    path = Path('../MODELS/unet3D_small')
     dataDirs = [
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent10"
+        "../DATA/transformed_small/in15_vent10",
+        "../DATA/transformed_small/in15_vent15",
+        "../DATA/transformed_small/in15_vent20"
     ]
 
     hist = trainNet(unet=Unet, dataDirs=dataDirs, epochs=20000, batch_size=5
                     , frameWidth=2, nChannel=16, deep=4, growFactor=1, learningRate=1e-4
-                    , path=path, validationSplit=0)
+                    , path=path, validationSplit=0.1)
 
     plotLoss(history=hist, path=path)
     plotErrs(path=path)
