@@ -247,8 +247,8 @@ def trainNetMultistep(
 
 
 if __name__ == "__main__":
-    from UNetDev3D_two_param import UNetDev as Unet
-    from dataClass3D_two_parameters import Data
+    from UNetDev3D_one_param import UNetDev as Unet
+    from dataClass3D_one_param import Data
 
     import os
 
@@ -278,20 +278,20 @@ if __name__ == "__main__":
     # ]
 
     dataDirs = [
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent10",
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent15",
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent20",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent10",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent15",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent20",
     ]
-    path = Path("../../data/net32_3D_multistep_coarse")
+    path = Path("../../data/net41_3D_multistep")
 
     hist = trainNetMultistep(
         unet=Unet,
         dataDirs=dataDirs,
-        epochs=10000,
+        epochs=20000,
         batch_size=2,
         frameWidth=2,
         nChannel=12,
-        deep=4,
+        deep=5,
         growFactor=1,
         learningRate=1e-4,
         path=path,

@@ -217,8 +217,8 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
     dataIn[0:1, 0:nx, 0:ny, 0:nz, 4] = (nextMat['Y'][0][0] - mat['Y'][0][0]) / dt
     dataIn[0:1, 0:nx, 0:ny, 0:nz, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / dt
     dataIn[0:1, 0:nx, 0:ny, 0:nz, 6] = B
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 7] = mat['D_inlet'][0][0] * mat['parameters'][0][0][0][0] / 20
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 8] = mat['D'][0][0] * mat['parameters'][0][0][0][1] / 20
+    dataIn[0:1, 0:nx, 0:ny, 0:nz, 7] = mat['D'][0][0]
+    dataIn[0:1, 0:nx, 0:ny, 0:nz, 8] = mat['parameters'][0][0][0][0]
     dataIn[0:1, 0:nx, 0:ny, 0:nz, 9] = mat['U'][0][0]
     dataIn[0:1, 0:nx, 0:ny, 0:nz, 10] = mat['V'][0][0]
     dataIn[0:1, 0:nx, 0:ny, 0:nz, 11] = mat['W'][0][0]
@@ -233,9 +233,9 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
 
 
 if __name__ == "__main__":
-    dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20']
-    path = Path('../../data/net32_3D_multistep')
-    pathResults = path / Path('results_NN_vs_CFD_in15_vent20')
+    dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent15']
+    path = Path('../../data/net41_3D_multistep')
+    pathResults = path / Path('results_NN_vs_CFD_in10_vent15')
     pathResults.mkdir(exist_ok=True)
 
     net = keras.models.load_model(path / Path("model.keras"), safe_mode=False, custom_objects={
