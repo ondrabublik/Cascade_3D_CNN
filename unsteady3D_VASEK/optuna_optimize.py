@@ -201,7 +201,7 @@ def objective(trial, dataDirs, study_path, max_epochs, max_params):
     deep           = trial.suggest_int('deep', 2, max_deep)
     growFactor     = trial.suggest_int('growFactor', 0, 3)
     frame_width    = trial.suggest_int('frame_width', 1, 6)
-    learning_rate  = trial.suggest_float('learning_rate', 1e-4, 1e-3, log=True)
+    learning_rate  = trial.suggest_float('learning_rate', 1e-4, 1e-4, log=True)
     optimizer_name = trial.suggest_categorical('optimizer', ['adam'])  # extend as needed
 
     tqdm.write(f"\n  [Trial {trial.number + 1}] nCh={nChannel}, deep={deep}, "
@@ -260,8 +260,6 @@ def objective(trial, dataDirs, study_path, max_epochs, max_params):
     train_seq = SilentDataSequence(data, maxDataFiles, startBatch=0,              nBatches=n_train_batches)
     val_seq   = SilentDataSequence(data, maxDataFiles, startBatch=n_train_batches, nBatches=n_val_batches)
 
-    # Create output folder now so LivePlotCallback can save plots during training
-    trial_path.mkdir(parents=True, exist_ok=True)
 
     # --- Callbacks ---
     progress_cb = KerasTrialProgressCallback(trial.number + 1, max_epochs)
@@ -269,7 +267,7 @@ def objective(trial, dataDirs, study_path, max_epochs, max_params):
         keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, restore_best_weights=True),
         TFKerasPruningCallback(trial, 'val_loss'),
         progress_cb,
-        LivePlotCallback(path=trial_path, plot_every=50),
+        LivePlotCallback(path=trial_path, plot_every=100),
     ]
 
     # --- Train (always close the progress bar, even on exception) ---
@@ -294,8 +292,10 @@ def objective(trial, dataDirs, study_path, max_epochs, max_params):
 
     # Save trial results
     trial_params.update({'epochs_run': epochs_run, 'val_loss': val_loss})
-    with open(trial_path / 'trial_params.json', 'w') as f:
-        json.dump(trial_params, f, indent=4)
+    if epochs_run >= 100:
+        trial_path.mkdir(parents=True, exist_ok=True)
+        with open(trial_path / 'trial_params.json', 'w') as f:
+            json.dump(trial_params, f, indent=4)
 
     tqdm.write(f"  [Trial {trial.number + 1}] Done — {epochs_run} ep, "
                f"val_loss={val_loss:.6e}  → {trial_path.name}")
@@ -365,7 +365,9 @@ def run_optimization(dataDirs, path, max_epochs=500, max_params=10_000_000,
 
     best_params_file = path / 'best_hyperparameters.json'
     with open(best_params_file, 'w') as f:
-        json.dump(study.best_trial.params, f, indent=4)
+        json.dump({'trial': study.best_trial.number + 1,
+                   'val_loss': study.best_trial.value,
+                   'params': study.best_trial.params}, f, indent=4)
     print(f"\n  Best parameters saved to: {best_params_file}")
     print("=" * 65)
 
@@ -402,9 +404,9 @@ if __name__ == '__main__':
         "../DATA/transformed_small/in15_vent20",
     ]
 
-    MAX_EPOCHS = 100       # max epochs per trial (early stopping may cut short)
-    MAX_PARAMS = 1_000_000 # max trainable parameters per trial
-    PATIENCE   = 10        # stop study after N consecutive trials with no improvement
+    MAX_EPOCHS = 3000     # max epochs per trial (early stopping may cut short)
+    MAX_PARAMS = 1e6       # max trainable parameters per trial
+    PATIENCE   = 15        # stop study after N consecutive trials with no improvement
     TIMEOUT_H  = None      # optional wall-clock limit in hours (None = unlimited)
 
     run_optimization(dataDirs, path,
