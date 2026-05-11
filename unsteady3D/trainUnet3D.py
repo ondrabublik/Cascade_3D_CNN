@@ -149,8 +149,8 @@ def trainNet(unet, path, dataDirs=None, epochs=100, batch_size=64, learningRate=
 
 
 if __name__ == "__main__":
-    from dataClass3D import Data
-    from UNetDev3D import UNetDev as Unet
+    from dataClass3D_one_param import Data
+    from UNetDev3D_one_param import UNetDev as Unet
 
     import os
 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10',
     #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent15',
     #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20']
-    path = Path('../../data/net_3D_0_param')
+    path = Path('../../data/net42_3D_optimal')
     dataDirs = [
         "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10",
         '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent15',
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     ]
 
     hist = trainNet(unet=Unet, dataDirs=dataDirs, epochs=30000, batch_size=5
-                    , frameWidth=2, nChannel=16, deep=5, growFactor=1, learningRate=1e-4
+                    , frameWidth=3, nChannel=16, deep=3, growFactor=0, learningRate=1.5e-4
                     , path=path, validationSplit=0)
 
     plotLoss(history=hist, path=path)

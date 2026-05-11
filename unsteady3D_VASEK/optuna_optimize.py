@@ -201,7 +201,7 @@ def objective(trial, dataDirs, study_path, max_epochs, max_params):
     deep           = trial.suggest_int('deep', 2, max_deep)
     growFactor     = trial.suggest_int('growFactor', 0, 3)
     frame_width    = trial.suggest_int('frame_width', 1, 6)
-    learning_rate  = trial.suggest_float('learning_rate', 1e-4, 1e-3, log=True)
+    learning_rate  = trial.suggest_float('learning_rate', 1.5e-4, 1.5e-4, log=True)
     optimizer_name = trial.suggest_categorical('optimizer', ['adam'])  # extend as needed
 
     tqdm.write(f"\n  [Trial {trial.number + 1}] nCh={nChannel}, deep={deep}, "
@@ -395,11 +395,11 @@ if __name__ == '__main__':
     print(f"Optuna  : {optuna.__version__}")
 
     # --- Configuration ---
-    path = Path('../MODELS/unet3D_optuna')
+    path = Path('"../../data/unet3D_optuna')
     dataDirs = [
-        "../DATA/transformed_small/in15_vent10",
-        "../DATA/transformed_small/in15_vent15",
-        "../DATA/transformed_small/in15_vent20",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent10",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent15",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent20",
     ]
 
     MAX_EPOCHS = 100       # max epochs per trial (early stopping may cut short)

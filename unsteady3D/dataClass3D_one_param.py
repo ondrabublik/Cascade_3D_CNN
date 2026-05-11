@@ -20,7 +20,7 @@ class Data:
 		self.parameters = {}
 		self.scales = {}
 		self.batchSize = 10
-		self.nBatches = 10
+		self.nBatches = 20
 		self.dimIn = 13
 		self.dimOut = 4
 

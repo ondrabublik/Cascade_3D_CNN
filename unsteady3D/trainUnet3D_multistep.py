@@ -282,22 +282,22 @@ if __name__ == "__main__":
         "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent15",
         "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent20",
     ]
-    path = Path("../../data/net41_3D_multistep")
+    path = Path("../../data/net42_3D_multistep_optimal")
 
     hist = trainNetMultistep(
         unet=Unet,
         dataDirs=dataDirs,
         epochs=20000,
-        batch_size=2,
-        frameWidth=2,
-        nChannel=12,
-        deep=5,
-        growFactor=1,
-        learningRate=1e-4,
+        batch_size=3,
+        frameWidth=3,
+        nChannel=16,
+        deep=3,
+        growFactor=0,
+        learningRate=1.5e-4,
         path=path,
         n_steps=5,
-        velocityLossWeight=2.0,
-        pressureLossWeight=0.5,
+        velocityLossWeight=1.0,
+        pressureLossWeight=1.0,
     )
 
     plotLoss(history=hist, path=path)

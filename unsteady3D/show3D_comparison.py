@@ -234,7 +234,7 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
 
 if __name__ == "__main__":
     dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent15']
-    path = Path('../../data/net41_3D_multistep')
+    path = Path('../../data/net42_3D_multistep_optimal')
     pathResults = path / Path('results_NN_vs_CFD_in10_vent15')
     pathResults.mkdir(exist_ok=True)
 
