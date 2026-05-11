@@ -143,6 +143,7 @@ class LivePlotCallback(keras.callbacks.Callback):
         for i in range(panel, nrows * ncols):
             axs_flat[i].set_axis_off()
 
+        self.path.mkdir(parents=True, exist_ok=True)
         fig.savefig(self.path / Path('training_progress.png'), dpi=150)
         plt.close(fig)
 
