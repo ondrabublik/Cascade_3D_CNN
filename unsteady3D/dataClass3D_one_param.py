@@ -161,7 +161,7 @@ class Data:
 		dataIn[0:nx, 0:ny, 0:nz, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
 		dataIn[0:nx, 0:ny, 0:nz, 6] = B
 		dataIn[0:nx, 0:ny, 0:nz, 7] = mat['D'][0][0]
-		dataIn[0:nx, 0:ny, 0:nz, 8] = mat['parameters'][0][0][0][0]
+		dataIn[0:nx, 0:ny, 0:nz, 8] = mat['parameters'][0][0][0][1]
 		dataIn[0:nx, 0:ny, 0:nz, 9] = mat['U'][0][0] + u_noise
 		dataIn[0:nx, 0:ny, 0:nz, 10] = mat['V'][0][0] + v_noise
 		dataIn[0:nx, 0:ny, 0:nz, 11] = mat['W'][0][0] + w_noise
@@ -197,7 +197,7 @@ class Data:
 			dataIn[step, :, :, :, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
 			dataIn[step, :, :, :, 6] = B
 			dataIn[step, :, :, :, 7] = mat['D'][0][0]
-			dataIn[step, :, :, :, 8] = mat['parameters'][0][0][0][0]
+			dataIn[step, :, :, :, 8] = mat['parameters'][0][0][0][1]
 			dataIn[step, :, :, :, 9] = mat['U'][0][0] + u_noise
 			dataIn[step, :, :, :, 10] = mat['V'][0][0] + v_noise
 			dataIn[step, :, :, :, 11] = mat['W'][0][0] + w_noise

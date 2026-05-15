@@ -12,7 +12,7 @@ def dataDenormalization(data, minvalue, maxvalue):
 
 class UNetDev:
 
-    def __init__(self, n1, n2, n3, dimIn, dimOut, act='relu', actOut='linear', frame_width=1, nChannel=8, deep=5, growFactor=1,  scales=None):
+    def __init__(self, n1, n2, n3, dimIn, dimOut, act='relu', actOut='sigmoid', frame_width=1, nChannel=8, deep=5, growFactor=1,  scales=None):
         self.name = "Unet"
         self.n1 = n1
         self.n2 = n2

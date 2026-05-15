@@ -233,9 +233,9 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
 
 
 if __name__ == "__main__":
-    dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent15']
+    dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent20']
     path = Path('../../data/net42_3D_multistep_optimal')
-    pathResults = path / Path('results_NN_vs_CFD_in10_vent15')
+    pathResults = path / Path('results_NN_vs_CFD_in10_vent20')
     pathResults.mkdir(exist_ok=True)
 
     net = keras.models.load_model(path / Path("model.keras"), safe_mode=False, custom_objects={
@@ -246,8 +246,10 @@ if __name__ == "__main__":
     data = Data(dataDirs)
     B, matFiles = readMatFiles(dataDirs[0])
 
+    plotVtk = True
     dataNN, dataOut0, Xf, Yf, Zf = prepareDataInFromCFD(0, matFiles=matFiles, B=B, dt=data.parameters['dt'])
     for ind in range(len(matFiles)-1):
+        print(str(ind) + " / " + str(len(matFiles)-1))
         dataIn, dataOut, Xf, Yf, Zf = prepareDataInFromCFD(ind, matFiles=matFiles, B=B, dt=data.parameters['dt'])
 
         dataNN[:, :, :, :, 0:9] = dataIn[:, :, :, :, 0:9]
@@ -255,13 +257,13 @@ if __name__ == "__main__":
         dataNN[:, :, :, :, 9:13] = gen[:, :, :, :]
 
         plotResult(pathResults, gen[:,:,:,-5,:], dataIn[:,:,:,-5,:], dataOut[:,:,:,-5,:], ind)
-
-        vtk(pathResults / Path('result_' + str(ind) + '.vtu'), B, Xf, Yf, Zf, gen[0,:,:,:,0], gen[0,:,:,:,1], gen[0,:,:,:,2], gen[0,:,:,:,3])
-        vtk(pathResults / Path('result_CFD_' + str(ind) + '.vtu'), B, Xf, Yf, Zf, dataOut[0, :, :, :, 0], dataOut[0, :, :, :, 1], dataOut[0, :, :, :, 2], dataOut[0, :, :, :, 3])
-        vtk(pathResults / Path('difference_' + str(ind) + '.vtu'), B, Xf, Yf, Zf,
-            gen[0, :, :, :, 0] - dataOut[0, :, :, :, 0],
-            gen[0, :, :, :, 1] - dataOut[0, :, :, :, 1],
-            gen[0, :, :, :, 2] - dataOut[0, :, :, :, 2],
-            gen[0, :, :, :, 3] - dataOut[0, :, :, :, 3]
-            )
+        if plotVtk:
+            vtk(pathResults / Path('result_' + str(ind) + '.vtu'), B, Xf, Yf, Zf, gen[0,:,:,:,0], gen[0,:,:,:,1], gen[0,:,:,:,2], gen[0,:,:,:,3])
+            vtk(pathResults / Path('result_CFD_' + str(ind) + '.vtu'), B, Xf, Yf, Zf, dataOut[0, :, :, :, 0], dataOut[0, :, :, :, 1], dataOut[0, :, :, :, 2], dataOut[0, :, :, :, 3])
+            vtk(pathResults / Path('difference_' + str(ind) + '.vtu'), B, Xf, Yf, Zf,
+                gen[0, :, :, :, 0] - dataOut[0, :, :, :, 0],
+                gen[0, :, :, :, 1] - dataOut[0, :, :, :, 1],
+                gen[0, :, :, :, 2] - dataOut[0, :, :, :, 2],
+                gen[0, :, :, :, 3] - dataOut[0, :, :, :, 3]
+                )
 

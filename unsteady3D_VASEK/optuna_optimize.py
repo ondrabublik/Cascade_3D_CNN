@@ -397,11 +397,11 @@ if __name__ == '__main__':
     print(f"Optuna  : {optuna.__version__}")
 
     # --- Configuration ---
-    path = Path('../MODELS/unet3D_optuna')
+    path = Path('"../../data/unet3D_optuna_test2')
     dataDirs = [
-        "../DATA/transformed_small/in15_vent10",
-        "../DATA/transformed_small/in15_vent15",
-        "../DATA/transformed_small/in15_vent20",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent10",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent15",
+        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent20",
     ]
 
     MAX_EPOCHS = 3000     # max epochs per trial (early stopping may cut short)

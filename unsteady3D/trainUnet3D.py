@@ -183,13 +183,11 @@ if __name__ == "__main__":
     #             '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20']
     path = Path('../../data/net42_3D_optimal')
     dataDirs = [
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10",
-        '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent15',
-        '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20'
+        '../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent15'
     ]
 
     hist = trainNet(unet=Unet, dataDirs=dataDirs, epochs=30000, batch_size=5
-                    , frameWidth=3, nChannel=16, deep=3, growFactor=0, learningRate=1.5e-4
+                    , frameWidth=1, nChannel=32, deep=5, growFactor=0, learningRate=1e-4
                     , path=path, validationSplit=0)
 
     plotLoss(history=hist, path=path)

@@ -289,15 +289,15 @@ if __name__ == "__main__":
         dataDirs=dataDirs,
         epochs=20000,
         batch_size=3,
-        frameWidth=3,
-        nChannel=16,
-        deep=3,
+        frameWidth=2,
+        nChannel=26,
+        deep=5,
         growFactor=0,
-        learningRate=1.5e-4,
+        learningRate=1e-4,
         path=path,
         n_steps=5,
         velocityLossWeight=1.0,
-        pressureLossWeight=1.0,
+        pressureLossWeight=0.1,
     )
 
     plotLoss(history=hist, path=path)
