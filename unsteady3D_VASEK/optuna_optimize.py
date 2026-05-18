@@ -23,16 +23,16 @@ import optuna
 from optuna.integration import TFKerasPruningCallback
 from tqdm import tqdm
 
-from dataClass3D import Data
-from UNetDev3D import UNetDev
-from trainUnet3D import DataSequence, LivePlotCallback
+from dataClass3D_one_param import Data
+from UNetDev3D_one_param import UNetDev
+from trainUnet3D_multistep import MultiStepDataSequence, LivePlotCallback
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-class SilentDataSequence(DataSequence):
+class SilentDataSequence(MultiStepDataSequence):
     """DataSequence that suppresses the 'Data loaded: X' print."""
     def __getitem__(self, idx):
         with suppress_stdout():
@@ -180,6 +180,42 @@ class KerasTrialProgressCallback(keras.callbacks.Callback):
             self._bar = None
 
 
+def build_multistep_rollout_model(base_model, n_steps):
+    x_seq = tf.keras.Input(shape=(n_steps,) + tuple(base_model.input_shape[1:]))
+    preds = []
+    prev_pred = None
+
+    for step in range(n_steps):
+        x_step = tf.keras.layers.Lambda(lambda t, i=step: t[:, i, ...])(x_seq)
+        geo_step = tf.keras.layers.Lambda(lambda t: t[..., 0:9])(x_step)
+        orig_flow_step = tf.keras.layers.Lambda(lambda t: t[..., 9:13])(x_step)
+
+        if step == 0:
+            flow_step = orig_flow_step
+        else:
+            flow_step = prev_pred
+
+        model_input = tf.keras.layers.Concatenate(axis=-1)([geo_step, flow_step])
+        prev_pred = base_model(model_input)
+        pred_with_step = tf.keras.layers.Lambda(lambda t: tf.expand_dims(t, axis=1))(prev_pred)
+        preds.append(pred_with_step)
+
+    y_seq = tf.keras.layers.Concatenate(axis=1)(preds)
+    return tf.keras.Model(inputs=x_seq, outputs=y_seq, name=f"{base_model.name}_multistep")
+
+
+def weighted_uvwp_mse(velocity_weight=2.0, pressure_weight=0.5):
+    vel_w = tf.constant(velocity_weight, dtype=tf.float32)
+    p_w = tf.constant(pressure_weight, dtype=tf.float32)
+
+    def loss(y_true, y_pred):
+        # y shape: [batch, step, nx, ny, nz, 4]
+        diff_sq = tf.square(y_true - y_pred)
+        vel_loss = tf.reduce_mean(diff_sq[..., 0:3])
+        p_loss = tf.reduce_mean(diff_sq[..., 3:4])
+        return vel_w * vel_loss + p_w * p_loss
+
+    return loss
 # ---------------------------------------------------------------------------
 # Optuna objective
 # ---------------------------------------------------------------------------
@@ -194,15 +230,15 @@ def objective(trial, dataDirs, study_path, max_epochs, max_params):
     dimIn, dimOut = data.dimIn, data.dimOut
 
     # Constrain deep so max-pooling never shrinks any spatial dim below 2
-    max_deep = max(2, int(math.floor(math.log2(min(nx, ny, nz)))) - 1)
+    max_deep = max(2, int(math.floor(math.log2(min(nx, ny, nz)))))
 
     # --- Hyperparameters ---
-    nChannel       = trial.suggest_int('nChannel', 12, 18)
-    deep           = trial.suggest_int('deep', 2, max_deep)
-    growFactor     = trial.suggest_int('growFactor', 0, 3)
-    frame_width    = trial.suggest_int('frame_width', 1, 6)
-    learning_rate  = trial.suggest_float('learning_rate', 1e-4, 1e-4, log=True)
-    optimizer_name = trial.suggest_categorical('optimizer', ['adam'])  # extend as needed
+    nChannel       = trial.suggest_int('nChannel', 8, 64)
+    deep           = max_deep #trial.suggest_int('deep', 2, max_deep)
+    growFactor     = trial.suggest_int('growFactor', 0, 1)
+    frame_width    = trial.suggest_int('frame_width', 1, 4)
+    learning_rate  = 1e-4 #trial.suggest_float('learning_rate', 1e-4, 1e-4, log=True)
+    optimizer_name = 'adam' #trial.suggest_categorical('optimizer', ['adam'])  # extend as needed
 
     tqdm.write(f"\n  [Trial {trial.number + 1}] nCh={nChannel}, deep={deep}, "
                f"gF={growFactor}, fw={frame_width}, opt={optimizer_name}, lr={learning_rate:.2e}")
@@ -210,7 +246,7 @@ def objective(trial, dataDirs, study_path, max_epochs, max_params):
     trial_path = study_path / f"trial_{trial.number + 1:04d}"
     trial_params = {
         'trial': trial.number + 1,
-        'nChannel': nChannel, 'deep': deep, 'growFactor': growFactor,
+        'nChannel': nChannel, 'deep': max_deep, 'growFactor': growFactor,
         'frame_width': frame_width, 'activation': 'relu',
         'optimizer': optimizer_name, 'learning_rate': learning_rate,
         'max_epochs': max_epochs, 'max_params': max_params,
@@ -249,16 +285,35 @@ def objective(trial, dataDirs, study_path, max_epochs, max_params):
     else:
         optimizer = SGD(learning_rate=learning_rate, momentum=0.9)
 
-    net.model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['mae'])
+    net.build()
+    base_model = net.model
+
+    n_steps = 5
+    velocityLossWeight = 1
+    pressureLossWeight = 0.1
+    # Ensure multistep datasets exist (step axis is the first axis after batch).
+    first_multistep_file = data.dataPath / Path("dataIn_multistep_0.npy")
+    if not first_multistep_file.exists():
+        data.prepare_training_data_multistep(nSteps=n_steps)
+
+    multistep_model = build_multistep_rollout_model(base_model, n_steps=n_steps)
+    multistep_model.compile(
+        loss=weighted_uvwp_mse(
+            velocity_weight=velocityLossWeight,
+            pressure_weight=pressureLossWeight,
+        ),
+        optimizer=optimizer,
+        metrics=['mae']
+    )
 
     # --- Train / val split ---
-    maxDataFiles = 3
+    maxDataFiles = 2
     total_batches = data.nBatches
     n_val_batches   = max(maxDataFiles, int(total_batches * 0.1 // maxDataFiles) * maxDataFiles)
     n_train_batches = total_batches - n_val_batches
 
-    train_seq = SilentDataSequence(data, maxDataFiles, startBatch=0,              nBatches=n_train_batches)
-    val_seq   = SilentDataSequence(data, maxDataFiles, startBatch=n_train_batches, nBatches=n_val_batches)
+    train_seq = SilentDataSequence(data, maxDataFiles)
+    val_seq   = SilentDataSequence(data, maxDataFiles)
 
 
     # --- Callbacks ---
@@ -272,7 +327,7 @@ def objective(trial, dataDirs, study_path, max_epochs, max_params):
 
     # --- Train (always close the progress bar, even on exception) ---
     try:
-        history = net.model.fit(
+        history = multistep_model.fit(
             train_seq,
             validation_data=val_seq,
             epochs=max_epochs,
@@ -317,7 +372,7 @@ def run_optimization(dataDirs, path, max_epochs=500, max_params=10_000_000,
       - patience      : stop after this many consecutive trials with no improvement
     """
 
-    storage = f'sqlite:///{path / "optuna_unet3d.db"}'
+    storage = f'sqlite:///{path / "optuna_unet3d_multistep.db"}'
     path.mkdir(parents=True, exist_ok=True)
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
