@@ -277,12 +277,17 @@ if __name__ == "__main__":
     #     "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent20",
     # ]
 
+    # dataDirs = [
+    #     "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent10",
+    #     "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent15",
+    #     "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent20",
+    # ]
+
     dataDirs = [
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent10",
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent15",
-        "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent20",
+        "../../reader3D/FinalBladeCascade/data/transformed_10"
     ]
-    path = Path("../../data/net42_3D_multistep_optimal")
+
+    path = Path("../../data/net6_3D_multistep_full")
 
     hist = trainNetMultistep(
         unet=Unet,

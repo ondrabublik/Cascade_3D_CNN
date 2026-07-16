@@ -56,6 +56,29 @@ def format_duration(seconds):
         return f"{seconds // 3600:.0f}h {(seconds % 3600) // 60:.0f}m"
 
 
+def _trial_hyperparam(trial, key):
+    """Value from Optuna suggest (params) or fixed attrs set in objective (user_attrs)."""
+    if key in trial.params:
+        return trial.params[key]
+    if key in trial.user_attrs:
+        return trial.user_attrs[key]
+    return None
+
+
+def format_trial_params_line(trial):
+    """One-line summary of hyperparameters for progress output."""
+    lr = _trial_hyperparam(trial, 'learning_rate')
+    lr_str = f"{lr:.2e}" if lr is not None else "?"
+    return (
+        f"nCh={_trial_hyperparam(trial, 'nChannel') or '?'}, "
+        f"deep={_trial_hyperparam(trial, 'deep') or '?'}, "
+        f"gF={_trial_hyperparam(trial, 'growFactor') or '?'}, "
+        f"fw={_trial_hyperparam(trial, 'frame_width') or '?'}, "
+        f"opt={_trial_hyperparam(trial, 'optimizer') or '?'}, "
+        f"lr={lr_str}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Optuna study-level callbacks
 # ---------------------------------------------------------------------------
@@ -80,12 +103,7 @@ class OptunaProgressCallback:
             "─" * 65,
             f"  Trial {trial.number + 1:>4}  │  State: {trial.state.name}",
             f"  Val loss : {val_loss_str}",
-            f"  Params   : nCh={trial.params.get('nChannel','?')}, "
-            f"deep={trial.params.get('deep','?')}, "
-            f"gF={trial.params.get('growFactor','?')}, "
-            f"fw={trial.params.get('frame_width','?')}, "
-            f"opt={trial.params.get('optimizer','?')}, "
-            f"lr={trial.params.get('learning_rate', 0):.2e}",
+            f"  Params   : {format_trial_params_line(trial)}",
         ]
 
         try:
@@ -97,12 +115,7 @@ class OptunaProgressCallback:
             lines += [
                 f"  ── Best so far ──────────────────────────────────────────",
                 f"  Best loss: {best.value:.6e}  (trial #{best.number + 1})",
-                f"  Best params: nCh={best.params.get('nChannel','?')}, "
-                f"deep={best.params.get('deep','?')}, "
-                f"gF={best.params.get('growFactor','?')}, "
-                f"fw={best.params.get('frame_width','?')}, "
-                f"opt={best.params.get('optimizer','?')}, "
-                f"lr={best.params.get('learning_rate', 0):.2e}",
+                f"  Best params: {format_trial_params_line(best)}",
             ]
             best_params_file = self.save_path / 'best_hyperparameters.json'
             with open(best_params_file, 'w') as f:
@@ -240,13 +253,17 @@ def objective(trial, dataDirs, study_path, max_epochs, max_params):
     learning_rate  = 1e-4 #trial.suggest_float('learning_rate', 1e-4, 1e-4, log=True)
     optimizer_name = 'adam' #trial.suggest_categorical('optimizer', ['adam'])  # extend as needed
 
+    trial.set_user_attr('deep', deep)
+    trial.set_user_attr('optimizer', optimizer_name)
+    trial.set_user_attr('learning_rate', learning_rate)
+
     tqdm.write(f"\n  [Trial {trial.number + 1}] nCh={nChannel}, deep={deep}, "
                f"gF={growFactor}, fw={frame_width}, opt={optimizer_name}, lr={learning_rate:.2e}")
 
     trial_path = study_path / f"trial_{trial.number + 1:04d}"
     trial_params = {
         'trial': trial.number + 1,
-        'nChannel': nChannel, 'deep': max_deep, 'growFactor': growFactor,
+        'nChannel': nChannel, 'deep': deep, 'growFactor': growFactor,
         'frame_width': frame_width, 'activation': 'relu',
         'optimizer': optimizer_name, 'learning_rate': learning_rate,
         'max_epochs': max_epochs, 'max_params': max_params,
@@ -459,8 +476,8 @@ if __name__ == '__main__':
         "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed_small/in15_vent20",
     ]
 
-    MAX_EPOCHS = 3000     # max epochs per trial (early stopping may cut short)
-    MAX_PARAMS = 1e6       # max trainable parameters per trial
+    MAX_EPOCHS = 1000     # max epochs per trial (early stopping may cut short)
+    MAX_PARAMS = 1.5e6       # max trainable parameters per trial
     PATIENCE   = 15        # stop study after N consecutive trials with no improvement
     TIMEOUT_H  = None      # optional wall-clock limit in hours (None = unlimited)
 

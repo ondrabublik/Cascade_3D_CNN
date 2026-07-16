@@ -233,9 +233,9 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
 
 
 if __name__ == "__main__":
-    dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent20']
-    path = Path('../../data/net42_3D_multistep_optimal')
-    pathResults = path / Path('results_NN_vs_CFD_in10_vent20')
+    dataDirs = ['../../reader3D/FinalBladeCascade/data/transformed_10']
+    path = Path('../../data/net6_3D_multistep_full')
+    pathResults = path / Path('results_NN_vs_CFD_vent10')
     pathResults.mkdir(exist_ok=True)
 
     net = keras.models.load_model(path / Path("model.keras"), safe_mode=False, custom_objects={
@@ -260,10 +260,10 @@ if __name__ == "__main__":
         if plotVtk:
             vtk(pathResults / Path('result_' + str(ind) + '.vtu'), B, Xf, Yf, Zf, gen[0,:,:,:,0], gen[0,:,:,:,1], gen[0,:,:,:,2], gen[0,:,:,:,3])
             vtk(pathResults / Path('result_CFD_' + str(ind) + '.vtu'), B, Xf, Yf, Zf, dataOut[0, :, :, :, 0], dataOut[0, :, :, :, 1], dataOut[0, :, :, :, 2], dataOut[0, :, :, :, 3])
-            vtk(pathResults / Path('difference_' + str(ind) + '.vtu'), B, Xf, Yf, Zf,
-                gen[0, :, :, :, 0] - dataOut[0, :, :, :, 0],
-                gen[0, :, :, :, 1] - dataOut[0, :, :, :, 1],
-                gen[0, :, :, :, 2] - dataOut[0, :, :, :, 2],
-                gen[0, :, :, :, 3] - dataOut[0, :, :, :, 3]
-                )
+            # vtk(pathResults / Path('difference_' + str(ind) + '.vtu'), B, Xf, Yf, Zf,
+            #     gen[0, :, :, :, 0] - dataOut[0, :, :, :, 0],
+            #     gen[0, :, :, :, 1] - dataOut[0, :, :, :, 1],
+            #     gen[0, :, :, :, 2] - dataOut[0, :, :, :, 2],
+            #     gen[0, :, :, :, 3] - dataOut[0, :, :, :, 3]
+            #     )
 

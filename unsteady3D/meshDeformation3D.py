@@ -12,7 +12,7 @@ class meshDeformation3D:
         self.Y0 = mesh.Y
         self.Z0 = mesh.Z
         self.BF = mesh.blend3D
-        self.BF = np.expand_dims(self.BF, axis=-1)
+        #self.BF = np.expand_dims(self.BF, axis=-1)
         self.nBody = len(self.BF[0, 0, 0, :])
         self.nx, self.ny, self.nz = np.shape(self.X0)
 

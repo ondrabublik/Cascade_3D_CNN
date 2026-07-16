@@ -59,7 +59,7 @@ class UNetDev:
         input5 = dataNormalization(input[..., 5:6], self.scales['minVelMesh'], self.scales['maxVelMesh'])
         input6 = input[..., 6:7]
         input7 = input[..., 7:8]
-        input8 = dataNormalization(input[..., 8:9], self.scales['minVel'], self.scales['maxVel'])
+        input8 = input[..., 8:9] / 20
         input9 = dataNormalization(input[..., 9:10], self.scales['minVel'], self.scales['maxVel'])
         input10 = dataNormalization(input[..., 10:11], self.scales['minVel'], self.scales['maxVel'])
         input11 = dataNormalization(input[..., 11:12], self.scales['minVel'], self.scales['maxVel'])

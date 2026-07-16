@@ -14,12 +14,12 @@ class Data:
 		self.parentDir = Path(self.dataDirs[0]).parents[0]
 		self.dataPath = self.parentDir / Path('data_3D')
 		self.nSamplesTot = 0
-		self.nx = 96 #96 # TODO make programmatically
-		self.ny = 48 #48
-		self.nz = 48 #48
+		self.nx = 192 #96 # TODO make programmatically
+		self.ny = 128 #48
+		self.nz = 64 #48
 		self.parameters = {}
 		self.scales = {}
-		self.batchSize = 10
+		self.batchSize = 2
 		self.nBatches = 20
 		self.dimIn = 13
 		self.dimOut = 4
@@ -161,7 +161,7 @@ class Data:
 		dataIn[0:nx, 0:ny, 0:nz, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
 		dataIn[0:nx, 0:ny, 0:nz, 6] = B
 		dataIn[0:nx, 0:ny, 0:nz, 7] = mat['D'][0][0]
-		dataIn[0:nx, 0:ny, 0:nz, 8] = mat['parameters'][0][0][0][1]
+		dataIn[0:nx, 0:ny, 0:nz, 8] = mat['parameters'][0][0][0][0]
 		dataIn[0:nx, 0:ny, 0:nz, 9] = mat['U'][0][0] + u_noise
 		dataIn[0:nx, 0:ny, 0:nz, 10] = mat['V'][0][0] + v_noise
 		dataIn[0:nx, 0:ny, 0:nz, 11] = mat['W'][0][0] + w_noise
@@ -197,7 +197,7 @@ class Data:
 			dataIn[step, :, :, :, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
 			dataIn[step, :, :, :, 6] = B
 			dataIn[step, :, :, :, 7] = mat['D'][0][0]
-			dataIn[step, :, :, :, 8] = mat['parameters'][0][0][0][1]
+			dataIn[step, :, :, :, 8] = mat['parameters'][0][0][0][0]
 			dataIn[step, :, :, :, 9] = mat['U'][0][0] + u_noise
 			dataIn[step, :, :, :, 10] = mat['V'][0][0] + v_noise
 			dataIn[step, :, :, :, 11] = mat['W'][0][0] + w_noise
