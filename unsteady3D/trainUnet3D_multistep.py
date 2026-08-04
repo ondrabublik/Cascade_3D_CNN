@@ -283,11 +283,14 @@ if __name__ == "__main__":
     #     "../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in10_vent20",
     # ]
 
+    # Anchor paths to this file, not to the current working directory.
+    projectDir = Path(__file__).resolve().parents[1]
+
     dataDirs = [
-        "../../reader3D/FinalBladeCascade/data/transformed_10"
+        str(projectDir / "DATA" / "data_small" / "transformed_10")
     ]
 
-    path = Path("../../data/net6_3D_multistep_full")
+    path = projectDir / "data" / "net6_3D_multistep_full"
 
     hist = trainNetMultistep(
         unet=Unet,

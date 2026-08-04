@@ -14,9 +14,6 @@ class Data:
 		self.parentDir = Path(self.dataDirs[0]).parents[0]
 		self.dataPath = self.parentDir / Path('data_3D')
 		self.nSamplesTot = 0
-		self.nx = 48 #96 # TODO make programmatically
-		self.ny = 24 #48
-		self.nz = 24 #48
 		self.parameters = {}
 		self.scales = {}
 		self.batchSize = 10
@@ -30,6 +27,8 @@ class Data:
 		for dir in self.dataDirs:
 			if not Path(dir).exists():
 				sys.exit("Error: Data directory doesn't exists " + dir)
+
+		self.nx, self.ny, self.nz = self.readGridSize()
 
 		if not self.dataPath.is_dir():
 			self.dataPath.mkdir(parents=True, exist_ok=True)
@@ -82,6 +81,12 @@ class Data:
 
 	def setParameters(self):
 		self.parameters = {'Re': 5000, 'dt': 0.1}
+
+	def readGridSize(self):
+		mat_files = [f for f in Path(self.dataDirs[0]).iterdir()]
+		sorted_mat_files = sorted(mat_files, key=lambda filename: int(re.search(r'\d+', filename.name).group()))
+		mat0 = scipy.io.loadmat(sorted_mat_files[0])['data']
+		return np.shape(mat0['X'][0][0])
 
 	def setScales(self):
 		Umin = Vmin = Wmin = Pmin = dXmin = dYmin = dZmin = 1e10
@@ -229,9 +234,6 @@ class Data:
 			nIter.append(len(sorted_mat_files[-1]))
 			nIterTot += nIter[-1]
 
-		mat0 = scipy.io.loadmat(sorted_mat_files[0][0])['data']
-		self.nx, self.ny, self.nz = np.shape(mat0['X'][0][0])
-
 		self.nSamplesTot = min(nIterTot, nSamplesPerDir * len(self.dataDirs))
 		md = meshDeformation3D(self.parentDir / Path('mesh.mat'))
 		B = md.computeB()
@@ -279,9 +281,6 @@ class Data:
 			sorted_mat_files.append(sorted(mat_files, key=lambda filename: int(re.search(r'\d+', filename.name).group())))
 			nIter.append(len(sorted_mat_files[-1]))
 			nIterTot += nIter[-1]
-
-		mat0 = scipy.io.loadmat(sorted_mat_files[0][0])['data']
-		self.nx, self.ny, self.nz = np.shape(mat0['X'][0][0])
 
 		self.nSamplesTot = min(nIterTot, nSamplesPerDir * len(self.dataDirs))
 		md = meshDeformation3D(self.parentDir / Path('mesh.mat'))
