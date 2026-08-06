@@ -1,6 +1,15 @@
 import json
+import math
 import sys
 from pathlib import Path
+
+import matplotlib
+
+# Must be set before pyplot is imported. The interactive Tk backend is not thread-safe:
+# Keras loads data in worker threads and a figure garbage-collected off the main thread
+# kills the process with "Tcl_AsyncDelete: async handler deleted by the wrong thread".
+# This script only ever writes PNGs, so the non-interactive backend is the right one.
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -74,21 +83,121 @@ def plotErrs(path):
     plt.close()
 
 
+def smoothExponential(values, alpha=0.9):
+    """Exponential moving average smoothing."""
+    smoothed = []
+    s = values[0]
+    for v in values:
+        s = alpha * s + (1 - alpha) * v
+        smoothed.append(s)
+    return smoothed
+
+
+class LivePlotCallback(keras.callbacks.Callback):
+    """Logs every Keras metric each epoch and plots them every `plot_every` epochs.
+
+    The text log is the authoritative record: it is appended and closed after every
+    single epoch, so it survives an interrupted run. The format is the tab-separated
+    one plotErrs() already reads, which is also plain TSV for any external tool.
+    """
+
+    def __init__(self, path, plot_every=50, logName='errsHistory.txt'):
+        super().__init__()
+        self.path = path
+        self.plot_every = plot_every
+        self.logFile = self.path / Path(logName)
+        self.columns = None     # fixed on the first epoch, once the metric keys are known
+        self.epochs_log = []
+        self.metrics_log = {}   # key -> list of values
+
+    def _writeLogRow(self, epoch, logs):
+        if self.columns is None:
+            self.columns = list(logs.keys())
+            with open(self.logFile, 'w') as f:
+                f.write('[epoch]\t')
+                for key in self.columns:
+                    f.write('[%s]\t' % key)
+                f.write('\n')
+
+        with open(self.logFile, 'a') as f:
+            f.write('%d\t' % epoch)
+            for key in self.columns:
+                f.write('%.6e\t' % logs.get(key, float('nan')))
+            f.write('\n')
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        self.epochs_log.append(epoch + 1)
+        for key, val in logs.items():
+            self.metrics_log.setdefault(key, []).append(val)
+
+        self._writeLogRow(epoch + 1, logs)
+
+        if (epoch + 1) % self.plot_every == 0:
+            self._save_plot()
+
+    def _save_plot(self):
+        epochs = self.epochs_log
+
+        # Separate train vs. val keys
+        train_keys = [k for k in self.metrics_log if not k.startswith('val_')]
+
+        # Build subplot grid: one panel per metric (train+val overlaid)
+        n_panels = len(train_keys)
+
+        ncols = 2
+        nrows = math.ceil(n_panels / ncols)
+        fig, axs = plt.subplots(nrows, ncols, figsize=(12, 4 * nrows))
+        fig.suptitle(f'Training progress  (epoch {self.epochs_log[-1]})', fontsize=13)
+        fig.tight_layout(rect=(0, 0, 1, 0.96), h_pad=4, w_pad=4)
+        axs_flat = list(axs.flat) if hasattr(axs, 'flat') else [axs]
+
+        panel = 0
+        for key in train_keys:
+            ax = axs_flat[panel]
+            y_train = self.metrics_log[key]
+            ax.semilogy(epochs, y_train, color='steelblue', alpha=0.35,
+                        linestyle='none', marker='o', markersize=3, label=f'train {key}')
+            ax.semilogy(epochs, smoothExponential(y_train), color='steelblue',
+                        linewidth=1.5, label=f'train {key} (smooth)')
+
+            val_key = 'val_' + key
+            if val_key in self.metrics_log:
+                y_val = self.metrics_log[val_key]
+                ax.semilogy(epochs, y_val, color='tomato', alpha=0.35,
+                            linestyle='none', marker='o', markersize=3, label=f'val {key}')
+                ax.semilogy(epochs, smoothExponential(y_val), color='tomato',
+                            linewidth=1.5, label=f'val {key} (smooth)')
+
+            ax.set_title(key)
+            ax.set_xlabel('epoch')
+            ax.grid(True, which='both', linestyle='--', alpha=0.4)
+            ax.legend(fontsize=7)
+            panel += 1
+
+        # Hide any unused panels
+        for i in range(panel, nrows * ncols):
+            axs_flat[i].set_axis_off()
+
+        fig.savefig(self.path / Path('training_progress.png'), dpi=150)
+        plt.close(fig)
+
+
 class ErrsEqs(keras.callbacks.Callback):
-    def __init__(self, net, path):
+    """Checkpoints the base UNet: 'model.keras' every 10 epochs (latest state) and
+    'model_best.keras' whenever `monitor` improves.
+
+    Keras' own ModelCheckpoint is not usable here: fit() runs the unrolled rollout
+    wrapper, so it would save that instead of the plain UNet the inference scripts
+    expect. Metric logging lives in LivePlotCallback.
+    """
+
+    def __init__(self, net, path, monitor="val_loss"):
         super().__init__()
         self.net = net
         self.path = path
-        self.errs = dict.fromkeys(
-            ["MSE", "Continuity local", "NS local", "Cross-section mass flow"], 0
-        )
-
-        self.file = self.path / Path("errsHistory.txt")
-        with open(self.file, "w") as f:
-            f.write("[epoch]\t")
-            for key in self.errs.keys():
-                f.write("[%s]\t" % key)
-            f.write("\n")
+        self.monitor = monitor
+        self.best = float("inf")
 
     def on_epoch_begin(self, epoch, logs=None):
         if epoch == 0:
@@ -96,23 +205,32 @@ class ErrsEqs(keras.callbacks.Callback):
 
         if epoch % 10 == 0:
             self.net.model.save((self.path / Path("model.keras")))
-            #plotLoss(path=self.path, history=self.net.model.history)
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        current = logs.get(self.monitor)
+        if current is not None and current < self.best:
+            self.best = current
+            self.net.model.save((self.path / Path("model_best.keras")))
 
 
 class MultiStepDataSequence(tf.keras.utils.Sequence):
-    def __init__(self, data, maxDataFiles):
+    """One item = one .npy batch file, one epoch = every file in fileIds.
+
+    fileIds is explicit so the caller can hold a disjoint set of files back for
+    validation.
+    """
+
+    def __init__(self, data, fileIds, **kwargs):
+        super().__init__(**kwargs)
         self.data = data
-        self.maxDataFiles = maxDataFiles
-        self.nGroups = int(data.nBatches / maxDataFiles)
-        self.groupIndex = 0
+        self.fileIds = list(fileIds)
 
     def __len__(self):
-        return self.maxDataFiles
+        return len(self.fileIds)
 
     def __getitem__(self, idx):
-        self.groupIndex += 1
-        self.groupIndex = self.groupIndex % self.nGroups
-        i = self.groupIndex * self.maxDataFiles + idx
+        i = self.fileIds[idx]
         return self.data.loadDataIn_multistep(i), self.data.loadDataOut_multistep(i)
 
 
@@ -170,6 +288,8 @@ def trainNetMultistep(
     n_steps=5,
     velocityLossWeight=2.0,
     pressureLossWeight=0.5,
+    validationSplit=0.2,
+    clipNorm=1.0,
 ):
     data = Data(dataDirs)
     nx, ny, nz = data.nx, data.ny, data.nz
@@ -201,7 +321,9 @@ def trainNetMultistep(
         data.prepare_training_data_multistep(nSteps=n_steps)
 
     multistep_model = build_multistep_rollout_model(base_model, n_steps=n_steps)
-    optimizer = Adam(learning_rate=learningRate)
+    # clipnorm guards the rollout: the gradient runs through n_steps chained calls of
+    # the same UNet, where one bad sequence can otherwise produce a huge update.
+    optimizer = Adam(learning_rate=learningRate, clipnorm=clipNorm)
     multistep_model.compile(
         loss=weighted_uvwp_mse(
             velocity_weight=velocityLossWeight,
@@ -225,20 +347,37 @@ def trainNetMultistep(
         "nSteps": n_steps,
         "velocityLossWeight": velocityLossWeight,
         "pressureLossWeight": pressureLossWeight,
+        "validationSplit": validationSplit,
+        "clipNorm": clipNorm,
     }
     file_path = path / Path("train_params.json")
     with file_path.open("w") as file:
         json.dump(input_params, fp=file, indent=4)
 
-    maxDataFiles = 3
-    train_data_sequence = MultiStepDataSequence(data, maxDataFiles)
+    # Hold the last files back for validation. fit() cannot do validation_split on a
+    # Sequence -- it only splits arrays it can slice -- so the split has to be explicit.
+    nVal = int(round(data.nBatches * validationSplit))
+    nVal = min(nVal, data.nBatches - 1)
+    trainIds = range(data.nBatches - nVal)
+    valIds = range(data.nBatches - nVal, data.nBatches)
+
+    train_data_sequence = MultiStepDataSequence(data, trainIds)
+    val_data_sequence = MultiStepDataSequence(data, valIds) if nVal else None
+    print(f"train files: {len(trainIds)}, validation files: {nVal}")
+
+    # Without a validation split there is no val_loss to watch, so fall back to loss.
+    monitorKey = "val_loss" if val_data_sequence else "loss"
+    print(f"monitoring '{monitorKey}' for the best checkpoint")
+
+    live_plot = LivePlotCallback(path=path, plot_every=10)
 
     history = multistep_model.fit(
         train_data_sequence,
+        validation_data=val_data_sequence,
         shuffle=True,
         epochs=epochs,
         verbose=1,
-        callbacks=[ErrsEqs(net, path)],
+        callbacks=[ErrsEqs(net, path, monitor=monitorKey), live_plot],
     )
 
     # Save only base UNet model (without multistep Lambda wrapper).
