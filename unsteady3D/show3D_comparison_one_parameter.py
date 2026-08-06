@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import re
 from tensorflow import keras
-from dataClass3D import Data
+from dataClass3D_one_param import Data
 from matplotlib import pyplot as plt
 from pathlib import Path
 import scipy
@@ -201,8 +201,8 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
     dataIn[0:1,0:nx, 0:ny, 0:nz, 4] = (nextMat['Y'][0][0] - mat['Y'][0][0]) / dt
     dataIn[0:1,0:nx, 0:ny, 0:nz, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / dt
     dataIn[0:1, 0:nx, 0:ny, 0:nz, 6] = B
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 7] = mat['D_inlet'][0][0] * mat['parameters'][0][0][0][0] / 20
-    dataIn[0:1, 0:nx, 0:ny, 0:nz, 8] = mat['D'][0][0] * mat['parameters'][0][0][0][1] / 20
+    dataIn[0:1, 0:nx, 0:ny, 0:nz, 7] = mat['D'][0][0]
+    dataIn[0:1, 0:nx, 0:ny, 0:nz, 8] = mat['parameters'][0][0][0][0]
     dataIn[0:1,0:nx, 0:ny, 0:nz, 9] = mat['U'][0][0]
     dataIn[0:1,0:nx, 0:ny, 0:nz, 10] = mat['V'][0][0]
     dataIn[0:1,0:nx, 0:ny, 0:nz, 11] = mat['W'][0][0]
@@ -217,10 +217,13 @@ def prepareDataInFromCFD(ind, matFiles, B, dt):
 
 
 if __name__ == "__main__":
-    dataDirs = ['../../reader3D/SimpleBladeExtrapolation/unsteady_interpolation/transformed/in15_vent10']
-    path = Path('../../data/net32_3D_multistep')
-    pathResults = path / Path('results_NN_vs_CFD_in15_vent10')
-    pathResults.mkdir(exist_ok=True)
+    # Anchor paths to this file, not to the current working directory.
+    projectDir = Path(__file__).resolve().parents[1]
+
+    dataDirs = [str(projectDir / 'DATA' / 'data_small' / 'transformed_10')]
+    path = projectDir / 'DATA' / 'net6_3D_multistep_full'
+    pathResults = path / Path('results_NN_vs_CFD_data_small')
+    pathResults.mkdir(parents=True, exist_ok=True)
 
     net = keras.models.load_model(path / Path("model.keras"), safe_mode=False, custom_objects={
         'slice':slice,
