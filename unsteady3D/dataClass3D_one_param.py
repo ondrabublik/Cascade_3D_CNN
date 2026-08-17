@@ -12,12 +12,12 @@ class Data:
 	def __init__(self, dirs):
 		self.dataDirs = dirs
 		self.parentDir = Path(self.dataDirs[0]).parents[0]
-		self.dataPath = self.parentDir / Path('data_3D')
+		self.dataPath = self.parentDir / Path('data_3Do')
 		self.nSamplesTot = 0
 		self.parameters = {}
 		self.scales = {}
 		self.batchSize = 2
-		self.nBatches = 20
+		self.nBatches = 300
 		self.dimIn = 13
 		self.dimOut = 4
 
@@ -158,23 +158,29 @@ class Data:
 		w_noise = np.random.normal(loc=0, scale=noise_stddev, size=(nx, ny, nz))
 		p_noise = np.random.normal(loc=0, scale=noise_stddev, size=(nx, ny, nz))
 
+		uMesh = (nextMat['X'][0][0] - mat['X'][0][0]) / self.parameters['dt']
+		vMesh = (nextMat['Y'][0][0] - mat['Y'][0][0]) / self.parameters['dt']
+		wMesh = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
+
 		dataIn[0:nx, 0:ny, 0:nz, 0] = mat['X'][0][0]
 		dataIn[0:nx, 0:ny, 0:nz, 1] = mat['Y'][0][0]
 		dataIn[0:nx, 0:ny, 0:nz, 2] = mat['Z'][0][0]
-		dataIn[0:nx, 0:ny, 0:nz, 3] = (nextMat['X'][0][0] - mat['X'][0][0]) / self.parameters['dt']
-		dataIn[0:nx, 0:ny, 0:nz, 4] = (nextMat['Y'][0][0] - mat['Y'][0][0]) / self.parameters['dt']
-		dataIn[0:nx, 0:ny, 0:nz, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
+		dataIn[0:nx, 0:ny, 0:nz, 3] = uMesh
+		dataIn[0:nx, 0:ny, 0:nz, 4] = vMesh
+		dataIn[0:nx, 0:ny, 0:nz, 5] = wMesh
 		dataIn[0:nx, 0:ny, 0:nz, 6] = B
 		dataIn[0:nx, 0:ny, 0:nz, 7] = mat['D'][0][0]
 		dataIn[0:nx, 0:ny, 0:nz, 8] = mat['parameters'][0][0][0][0]
-		dataIn[0:nx, 0:ny, 0:nz, 9] = mat['U'][0][0] + u_noise
-		dataIn[0:nx, 0:ny, 0:nz, 10] = mat['V'][0][0] + v_noise
-		dataIn[0:nx, 0:ny, 0:nz, 11] = mat['W'][0][0] + w_noise
+		# Na hranici profilu (B==1) rychlost = rychlost site (jako addBC)
+		mask = B == 1
+		dataIn[0:nx, 0:ny, 0:nz, 9] = np.where(mask, uMesh, mat['U'][0][0] + u_noise)
+		dataIn[0:nx, 0:ny, 0:nz, 10] = np.where(mask, vMesh, mat['V'][0][0] + v_noise)
+		dataIn[0:nx, 0:ny, 0:nz, 11] = np.where(mask, wMesh, mat['W'][0][0] + w_noise)
 		dataIn[0:nx, 0:ny, 0:nz, 12] = mat['P'][0][0] + p_noise
 
-		dataOut[0:nx, 0:ny, 0:nz, 0] = nextMat['U'][0][0]
-		dataOut[0:nx, 0:ny, 0:nz, 1] = nextMat['V'][0][0]
-		dataOut[0:nx, 0:ny, 0:nz, 2] = nextMat['W'][0][0]
+		dataOut[0:nx, 0:ny, 0:nz, 0] = np.where(mask, uMesh, nextMat['U'][0][0])
+		dataOut[0:nx, 0:ny, 0:nz, 1] = np.where(mask, vMesh, nextMat['V'][0][0])
+		dataOut[0:nx, 0:ny, 0:nz, 2] = np.where(mask, wMesh, nextMat['W'][0][0])
 		dataOut[0:nx, 0:ny, 0:nz, 3] = nextMat['P'][0][0]
 
 	def setData_multistep(self, mats, dataIn, dataOut, B):
@@ -194,23 +200,29 @@ class Data:
 			w_noise = np.random.normal(loc=0, scale=noise_stddev, size=(nx, ny, nz))
 			p_noise = np.random.normal(loc=0, scale=noise_stddev, size=(nx, ny, nz))
 
+			uMesh = (nextMat['X'][0][0] - mat['X'][0][0]) / self.parameters['dt']
+			vMesh = (nextMat['Y'][0][0] - mat['Y'][0][0]) / self.parameters['dt']
+			wMesh = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
+
 			dataIn[step, :, :, :, 0] = mat['X'][0][0]
 			dataIn[step, :, :, :, 1] = mat['Y'][0][0]
 			dataIn[step, :, :, :, 2] = mat['Z'][0][0]
-			dataIn[step, :, :, :, 3] = (nextMat['X'][0][0] - mat['X'][0][0]) / self.parameters['dt']
-			dataIn[step, :, :, :, 4] = (nextMat['Y'][0][0] - mat['Y'][0][0]) / self.parameters['dt']
-			dataIn[step, :, :, :, 5] = (nextMat['Z'][0][0] - mat['Z'][0][0]) / self.parameters['dt']
+			dataIn[step, :, :, :, 3] = uMesh
+			dataIn[step, :, :, :, 4] = vMesh
+			dataIn[step, :, :, :, 5] = wMesh
 			dataIn[step, :, :, :, 6] = B
 			dataIn[step, :, :, :, 7] = mat['D'][0][0]
 			dataIn[step, :, :, :, 8] = mat['parameters'][0][0][0][0]
-			dataIn[step, :, :, :, 9] = mat['U'][0][0] + u_noise
-			dataIn[step, :, :, :, 10] = mat['V'][0][0] + v_noise
-			dataIn[step, :, :, :, 11] = mat['W'][0][0] + w_noise
+			# Na hranici profilu (B==1) rychlost = rychlost site (jako addBC)
+			mask = B == 1
+			dataIn[step, :, :, :, 9] = np.where(mask, uMesh, mat['U'][0][0] + u_noise)
+			dataIn[step, :, :, :, 10] = np.where(mask, vMesh, mat['V'][0][0] + v_noise)
+			dataIn[step, :, :, :, 11] = np.where(mask, wMesh, mat['W'][0][0] + w_noise)
 			dataIn[step, :, :, :, 12] = mat['P'][0][0] + p_noise
 
-			dataOut[step, :, :, :, 0] = nextMat['U'][0][0]
-			dataOut[step, :, :, :, 1] = nextMat['V'][0][0]
-			dataOut[step, :, :, :, 2] = nextMat['W'][0][0]
+			dataOut[step, :, :, :, 0] = np.where(mask, uMesh, nextMat['U'][0][0])
+			dataOut[step, :, :, :, 1] = np.where(mask, vMesh, nextMat['V'][0][0])
+			dataOut[step, :, :, :, 2] = np.where(mask, wMesh, nextMat['W'][0][0])
 			dataOut[step, :, :, :, 3] = nextMat['P'][0][0]
 
 	def prepare_training_data(self):

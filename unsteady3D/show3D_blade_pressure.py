@@ -55,11 +55,11 @@ if __name__ == "__main__":
     projectDir = Path(__file__).resolve().parents[1]
 
     dataDirs = [
-        str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_15o")
+        str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_10o")
     ]
 
     path = projectDir / "data" / "net7_3D_multistep_lowo"
-    pathResults = path / Path('results_blade_pressure_vent15')
+    pathResults = path / Path('results_blade_pressure_vent10')
     pathResults.mkdir(exist_ok=True)
 
     net = keras.models.load_model(path / Path("model_best.keras"), safe_mode=False, custom_objects={

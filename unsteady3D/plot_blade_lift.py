@@ -140,8 +140,8 @@ def plot_lift_per_blade(path, time, lift_unet, lift_cfd):
 if __name__ == '__main__':
     projectDir = Path(__file__).resolve().parents[1]
 
-    dataDir = projectDir.parent / 'reader3D' / 'FinalBladeCascade' / 'data' / 'transformed_15o'
-    pathResults = projectDir / 'data' / 'net7_3D_multistep_lowo' / 'results_blade_pressure_vent15'
+    dataDir = projectDir.parent / 'reader3D' / 'FinalBladeCascade' / 'data' / 'transformed_10o'
+    pathResults = projectDir / 'data' / 'net7_3D_multistep_lowo' / 'results_blade_pressure_vent10'
 
     dt = load_dt(dataDir)
     blade_indices = get_blade_indices(pathResults)
