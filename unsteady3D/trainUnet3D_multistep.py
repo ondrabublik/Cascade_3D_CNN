@@ -288,7 +288,7 @@ def trainNetMultistep(
     n_steps=5,
     velocityLossWeight=2.0,
     pressureLossWeight=0.5,
-    validationSplit=0.2,
+    validationSplit=0.05,
     clipNorm=1.0,
 ):
     data = Data(dataDirs)
@@ -426,13 +426,13 @@ if __name__ == "__main__":
     projectDir = Path(__file__).resolve().parents[1]
 
     dataDirs = [
-        str(projectDir / "DATA" / "dataooo" / "transformed_0ooo"),
-        str(projectDir / "DATA" / "dataooo" / "transformed_10ooo"),
-        str(projectDir / "DATA" / "dataooo" / "transformed_15ooo"),
-        str(projectDir / "DATA" / "dataooo" / "transformed_20ooo")
+        str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_0o"),
+        str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data"/ "transformed_10o"),
+        str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_15o"),
+        str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_20o")
     ]
 
-    path = projectDir / "data" / "net6_3D_multistep_full"
+    path = projectDir / "data" / "net7_3D_multistep_lowo"
 
     hist = trainNetMultistep(
         unet=Unet,
@@ -441,13 +441,14 @@ if __name__ == "__main__":
         batch_size=3,
         frameWidth=2,
         nChannel=26,
-        deep=5,
+        deep=6,
         growFactor=0,
         learningRate=1e-4,
         path=path,
         n_steps=5,
         velocityLossWeight=1.0,
         pressureLossWeight=0.1,
+        validationSplit=0.05,
     )
 
     plotLoss(history=hist, path=path)

@@ -50,24 +50,41 @@ class meshDeformation3D:
 
         return B
 
+    def computeBladeIndex(self):
+        bladeIndex = np.full(np.shape(self.X0), -1, dtype=np.int32)
+        tol = 1e-3
+        for i in range(self.nBody):
+            bladeIndex[np.abs(self.BF[:, :, :, i] - 1) < tol] = i
+
+        return bladeIndex
+
     def showBf(self, body):
         plt.figure()
-        plt.pcolormesh(self.BF[:, :, 0, body])
-        plt.show()
+        plt.pcolormesh(self.BF[:, :, -1, body])
+        # plt.show()
 
 
 if __name__ == "__main__":
-    md = meshDeformation3D('../../data/TrainingData/def3D.mat')
+    md = meshDeformation3D('../../reader3D/FinalBladeCascade/data/mesh.mat')
     # X, Y = md.computeMesh([0.0, 0, 0, 0], [0.0, 0, 0, 0])
     X, Y, Z = md.computeMesh(np.zeros(20), np.zeros(20), np.zeros(20))
     print(np.shape(X))
 
-    md.showBf(0)
+    # md.showBf(0)
+    # md.showBf(1)
+    # md.showBf(2)
+    # md.showBf(3)
+    # md.showBf(4)
 
+    B = md.computeB()
     plt.figure()
-    for i in range(len(X[:, 1, 0])):
-        plt.plot(X[i, :, 0], Y[i, :, 0], color='k')
-    for j in range(len(X[1, :, 0])):
-        plt.plot(X[:, j, 0], Y[:, j, 0], color='k')
-
+    plt.pcolormesh(B[:, :, -1])
     plt.show()
+
+    # plt.figure()
+    # for i in range(len(X[:, 1, 0])):
+    #     plt.plot(X[i, :, 0], Y[i, :, 0], color='k')
+    # for j in range(len(X[1, :, 0])):
+    #     plt.plot(X[:, j, 0], Y[:, j, 0], color='k')
+    #
+    # plt.show()
