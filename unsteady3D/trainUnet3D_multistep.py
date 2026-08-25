@@ -426,7 +426,10 @@ if __name__ == "__main__":
     projectDir = Path(__file__).resolve().parents[1]
 
     dataDirs = [
-        str(projectDir / "DATA" / "data_small" / "transformed_10")
+        str(projectDir / "DATA" / "dataooo" / "transformed_0ooo"),
+        str(projectDir / "DATA" / "dataooo" / "transformed_10ooo"),
+        str(projectDir / "DATA" / "dataooo" / "transformed_15ooo"),
+        str(projectDir / "DATA" / "dataooo" / "transformed_20ooo")
     ]
 
     path = projectDir / "data" / "net6_3D_multistep_full"

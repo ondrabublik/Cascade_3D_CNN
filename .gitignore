@@ -4,3 +4,5 @@ MODELS
 unsteady3D_VASEK/__pycache__
 unsteady3D/.idea
 unsteady3D/__pycache__
+unsteady3D/optuna_results
+*.db

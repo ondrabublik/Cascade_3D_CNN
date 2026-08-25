@@ -1,0 +1,7 @@
+tensorflow>=2.20
+optuna>=4.0
+scipy
+numpy
+matplotlib
+pandas
+scikit-learn
