@@ -80,10 +80,10 @@ DEFAULT_ARCH = {"nChannel": 26, "frameWidth": 2, "growFactor": 0, "act": "relu"}
 
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIRS = [
-    str(PROJECT_DIR / "DATA" / "dataooo" / "transformed_0ooo"),
-    str(PROJECT_DIR / "DATA" / "dataooo" / "transformed_10ooo"),
-    str(PROJECT_DIR / "DATA" / "dataooo" / "transformed_15ooo"),
-    str(PROJECT_DIR / "DATA" / "dataooo" / "transformed_20ooo"),
+    str(PROJECT_DIR / ".." / "reader3D" / "FinalBladeCascade" / "data" / "transformed_0ooo"),
+    str(PROJECT_DIR / ".." / "reader3D" / "FinalBladeCascade" / "data" / "transformed_10ooo"),
+    str(PROJECT_DIR / ".." / "reader3D" / "FinalBladeCascade" / "data" / "transformed_15ooo"),
+    str(PROJECT_DIR / ".." / "reader3D" / "FinalBladeCascade" / "data" / "transformed_20ooo"),
 ]
 
 STUDY_NAMES = {"arch": "unet3d_arch", "train": "unet3d_train"}

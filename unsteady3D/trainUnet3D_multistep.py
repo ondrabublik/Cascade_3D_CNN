@@ -277,7 +277,7 @@ def trainNetMultistep(
     path,
     dataDirs=None,
     epochs=100,
-    batch_size=4,
+    batch_size=2,
     learningRate=1e-4,
     act="relu",
     actOut="sigmoid",
@@ -432,7 +432,14 @@ if __name__ == "__main__":
         str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_20o")
     ]
 
-    path = projectDir / "data" / "net7_3D_multistep_lowo"
+    # dataDirs = [
+    #     str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_0ooo"),
+    #     str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_10ooo"),
+    #     str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_15ooo"),
+    #     str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_20ooo")
+    # ]
+
+    path = projectDir / "data" / "net7_3D_multistep_lowo_v2"
 
     hist = trainNetMultistep(
         unet=Unet,
@@ -441,7 +448,7 @@ if __name__ == "__main__":
         batch_size=3,
         frameWidth=2,
         nChannel=26,
-        deep=6,
+        deep=7,
         growFactor=0,
         learningRate=1e-4,
         path=path,

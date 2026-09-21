@@ -10,7 +10,7 @@ from toVtk import vtkBoundary
 
 
 def readMatFiles(pathDir):
-    md = meshDeformation(Path(pathDir).parents[0] / Path('mesh.mat'))
+    md = meshDeformation(Path(pathDir).parents[0] / Path('mesho.mat'))
     B = md.computeB()
     bladeIndex = md.computeBladeIndex()
 
@@ -58,11 +58,11 @@ if __name__ == "__main__":
         str(projectDir.parent / "reader3D" / "FinalBladeCascade" / "data" / "transformed_10o")
     ]
 
-    path = projectDir / "data" / "net7_3D_multistep_lowo"
+    path = projectDir / "data" / "net7_3D_multistep_lowo_v4"
     pathResults = path / Path('results_blade_pressure_vent10')
     pathResults.mkdir(exist_ok=True)
 
-    net = keras.models.load_model(path / Path("model_best.keras"), safe_mode=False, custom_objects={
+    net = keras.models.load_model(path / Path("model.keras"), safe_mode=False, custom_objects={
         'slice': slice,
         'tf': tf})
 
@@ -75,6 +75,7 @@ if __name__ == "__main__":
         dataIn, dataOut, Xf, Yf, Zf = prepareDataInFromCFD(ind, matFiles=matFiles, B=B, dt=data.parameters['dt'])
 
         dataNN[:, :, :, :, 0:9] = dataIn[:, :, :, :, 0:9]
+        #dataNN[:, :, :, :, 0:13] = dataIn[:, :, :, :, 0:13]
         gen = net.predict(dataNN)
         dataNN[:, :, :, :, 9:13] = gen[:, :, :, :]
 

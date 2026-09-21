@@ -39,8 +39,8 @@ Common fixed settings: `deep=5`, `n_steps=5`, `batch_size=2`, validation split
 ## Run
 
 ```
-..\.venv\Scripts\python optuna_search.py --study arch  --n-trials 100 --epochs 300
-..\.venv\Scripts\python optuna_search.py --study train --n-trials 100 --epochs 300
+..\.venv\Scripts\python optuna_search.py --study arch  --n-trials 50 --epochs 600 --study-name study_arch_v1
+..\.venv\Scripts\python optuna_search.py --study train --n-trials 25 --epochs 300 --study-name study_v1
 ```
 
 - Run **arch first, then train** (train reads arch's best architecture from the
@@ -57,4 +57,5 @@ Common fixed settings: `deep=5`, `n_steps=5`, `batch_size=2`, validation split
 
 ```
 ../.venv/Scripts/optuna-dashboard sqlite:///optuna_unet3d.db
+python -m optuna_dashboard._cli sqlite:///optuna_unet3d.db
 ```
